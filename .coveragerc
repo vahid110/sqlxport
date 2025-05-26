@@ -1,0 +1,13 @@
+[run]
+omit =
+    sql2parquet/formats/base.py
+    sql2parquet/cli/__init__.py
+    sql2parquet/core/__init__.py
+    sql2parquet/ddl/__init__.py
+    sql2parquet/__init__.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
+    @abstractmethod
