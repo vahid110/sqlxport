@@ -1,4 +1,4 @@
-# sql2parquet/core/storage.py
+# sql2data/core/storage.py
 import boto3
 import pandas as pd
 import io

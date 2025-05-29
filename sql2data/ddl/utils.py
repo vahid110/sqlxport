@@ -1,4 +1,4 @@
-# sql2parquet/ddl/utils.py
+# sql2data/ddl/utils.py
 
 import pyarrow.parquet as pq
 import os

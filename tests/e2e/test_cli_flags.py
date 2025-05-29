@@ -1,7 +1,7 @@
 # tests/e2e/test_cli_flags.py
 
 import pytest
-from sql2parquet.cli.main import cli
+from sql2data.cli.main import cli
 
 def test_conflicting_output_flags(cli_runner):
     result = cli_runner.invoke(cli, [

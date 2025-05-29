@@ -1,4 +1,4 @@
-# sql2parquet/formats/base.py
+# sql2data/formats/base.py
 from abc import ABC, abstractmethod
 import pandas as pd
 

@@ -1,5 +1,5 @@
 
-# sql2parquet
+# sql2data
 
 **Modular CLI tool to extract data from PostgreSQL/Redshift and export to various formats (e.g. Parquet, CSV), with optional S3 upload and Athena integration.**
 
@@ -31,25 +31,25 @@ pip install -e .
 ## 🚀 Usage
 
 ```bash
-sql2parquet   --db-url postgresql://user:pass@localhost:5432/mydb   --query "SELECT * FROM users"   --output-file users.parquet   --format parquet
+sql2data   --db-url postgresql://user:pass@localhost:5432/mydb   --query "SELECT * FROM users"   --output-file users.parquet   --format parquet
 ```
 
 ### With S3 Upload
 
 ```bash
-sql2parquet   --db-url postgresql://...   --query "..."   --output-file users.parquet   --s3-bucket my-bucket   --s3-key users.parquet   --s3-access-key AKIA...   --s3-secret-key ...   --s3-endpoint https://s3.amazonaws.com
+sql2data   --db-url postgresql://...   --query "..."   --output-file users.parquet   --s3-bucket my-bucket   --s3-key users.parquet   --s3-access-key AKIA...   --s3-secret-key ...   --s3-endpoint https://s3.amazonaws.com
 ```
 
 ### Partitioned Export
 
 ```bash
-sql2parquet   --db-url postgresql://...   --query "..."   --output-dir output/   --partition-by group_column
+sql2data   --db-url postgresql://...   --query "..."   --output-dir output/   --partition-by group_column
 ```
 
 ### Redshift UNLOAD Mode
 
 ```bash
-sql2parquet   --use-redshift-unload   --db-url redshift+psycopg2://...   --query "SELECT * FROM large_table"   --s3-output-prefix s3://bucket/unload/   --iam-role arn:aws:iam::123456789012:role/MyUnloadRole
+sql2data   --use-redshift-unload   --db-url redshift+psycopg2://...   --query "SELECT * FROM large_table"   --s3-output-prefix s3://bucket/unload/   --iam-role arn:aws:iam::123456789012:role/MyUnloadRole
 ```
 
 ---
@@ -79,7 +79,7 @@ IAM_ROLE=arn:aws:iam::123456789012:role/MyUnloadRole
 Generate a template with:
 
 ```bash
-sql2parquet --generate-env-template
+sql2data --generate-env-template
 ```
 
 ---

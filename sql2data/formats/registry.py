@@ -1,11 +1,11 @@
-# sql2parquet/formats/registry.py
+# sql2data/formats/registry.py
 
-from sql2parquet.formats.parquet_writer import ParquetWriter
-from sql2parquet.formats.base import FormatWriter
+from sql2data.formats.parquet_writer import ParquetWriter
+from sql2data.formats.base import FormatWriter
 
 # Optional: import CSV writer only if needed
 try:
-    from sql2parquet.formats.csv_writer import CsvWriter
+    from sql2data.formats.csv_writer import CsvWriter
 except ImportError:
     CsvWriter = None
 

@@ -6,7 +6,7 @@ import pytest
 import tempfile
 import pandas as pd
 from click.testing import CliRunner
-from sql2parquet.cli.main import cli
+from sql2data.cli.main import cli
 from unittest.mock import MagicMock
 
 def create_sample_sqlite_db(with_partition_column=False):
@@ -88,7 +88,7 @@ def test_invalid_combo_output_file_with_partitioned_dir(runner):
     assert "only one of --output-file or --output-dir" in result.output or "Usage" in result.output
 
 def test_cli_output_csv_file(tmp_path):
-    from sql2parquet.cli.main import cli
+    from sql2data.cli.main import cli
     runner = CliRunner()
 
     output_file = tmp_path / "users.csv"
@@ -109,7 +109,7 @@ def test_cli_output_csv_file(tmp_path):
 
 def test_cli_output_csv_partitioned(tmp_path, monkeypatch):
     import pandas as pd
-    from sql2parquet.cli.main import cli
+    from sql2data.cli.main import cli
     from click.testing import CliRunner
 
     runner = CliRunner()
@@ -123,7 +123,7 @@ def test_cli_output_csv_partitioned(tmp_path, monkeypatch):
     })
 
     # ✅ Patch where it's USED, not where it's DEFINED
-    monkeypatch.setattr("sql2parquet.cli.main.fetch_query_as_dataframe", lambda *_: df)
+    monkeypatch.setattr("sql2data.cli.main.fetch_query_as_dataframe", lambda *_: df)
 
     result = runner.invoke(cli, [
         "--db-url", "sqlite://",
@@ -139,7 +139,7 @@ def test_cli_output_csv_partitioned(tmp_path, monkeypatch):
 
 
 def test_invalid_format_fails(tmp_path):
-    from sql2parquet.cli.main import cli
+    from sql2data.cli.main import cli
     runner = CliRunner()
 
     result = runner.invoke(cli, [
@@ -155,7 +155,7 @@ def test_invalid_format_fails(tmp_path):
 def test_cli_partitioned_csv_contents(tmp_path, monkeypatch):
     import pandas as pd
     from click.testing import CliRunner
-    from sql2parquet.cli.main import cli
+    from sql2data.cli.main import cli
 
     runner = CliRunner()
     output_dir = tmp_path / "csv_parts"
@@ -168,7 +168,7 @@ def test_cli_partitioned_csv_contents(tmp_path, monkeypatch):
     })
 
     # ✅ Patch the actual CLI usage point
-    monkeypatch.setattr("sql2parquet.cli.main.fetch_query_as_dataframe", lambda *_: df)
+    monkeypatch.setattr("sql2data.cli.main.fetch_query_as_dataframe", lambda *_: df)
 
     result = runner.invoke(cli, [
         "--db-url", "sqlite://",
@@ -200,9 +200,9 @@ def test_cli_partitioned_csv_empty_result(tmp_path, monkeypatch):
     from click.testing import CliRunner
 
     # Patch the function exactly as imported by main.py
-    monkeypatch.setattr("sql2parquet.cli.main.fetch_query_as_dataframe", lambda *_: pd.DataFrame(columns=["id", "log_date", "msg"]))
+    monkeypatch.setattr("sql2data.cli.main.fetch_query_as_dataframe", lambda *_: pd.DataFrame(columns=["id", "log_date", "msg"]))
 
-    from sql2parquet.cli.main import cli  # Import after patching
+    from sql2data.cli.main import cli  # Import after patching
 
     runner = CliRunner()
     output_dir = tmp_path / "csv_parts"
@@ -223,7 +223,7 @@ def test_cli_partitioned_csv_empty_result(tmp_path, monkeypatch):
 def test_cli_output_csv_non_partitioned(tmp_path, monkeypatch):
     import pandas as pd
     from click.testing import CliRunner
-    import sql2parquet.cli.main as cli_module
+    import sql2data.cli.main as cli_module
 
     df = pd.DataFrame({
         "id": [1, 2],
@@ -233,7 +233,7 @@ def test_cli_output_csv_non_partitioned(tmp_path, monkeypatch):
     # Patch where it's used
     monkeypatch.setattr(cli_module, "fetch_query_as_dataframe", lambda *_: df)
 
-    from sql2parquet.cli.main import cli
+    from sql2data.cli.main import cli
 
     runner = CliRunner()
     output_file = tmp_path / "simple_output.csv"
@@ -256,14 +256,14 @@ def test_cli_partitioned_upload_s3(tmp_path, monkeypatch):
     from unittest.mock import MagicMock
 
     # Patch data extraction
-    monkeypatch.setattr("sql2parquet.cli.main.fetch_query_as_dataframe", lambda *_: pd.DataFrame({
+    monkeypatch.setattr("sql2data.cli.main.fetch_query_as_dataframe", lambda *_: pd.DataFrame({
         "id": [1, 2],
         "cat": ["X", "Y"]
     }))
 
     # Patch uploader where it is USED
     mock_upload = MagicMock()
-    monkeypatch.setattr("sql2parquet.cli.main.upload_file_to_s3", mock_upload)
+    monkeypatch.setattr("sql2data.cli.main.upload_file_to_s3", mock_upload)
 
     # Patch os.walk to simulate partitioned files
     monkeypatch.setattr("os.walk", lambda path: [
@@ -271,7 +271,7 @@ def test_cli_partitioned_upload_s3(tmp_path, monkeypatch):
         (f"{path}/cat=Y", [], ["part-0000.csv"]),
     ])
 
-    from sql2parquet.cli.main import cli
+    from sql2data.cli.main import cli
     from click.testing import CliRunner
 
     output_dir = tmp_path / "out"

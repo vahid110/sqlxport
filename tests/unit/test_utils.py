@@ -5,7 +5,7 @@ import unittest
 import pyarrow as pa
 import pyarrow.parquet as pq
 import tempfile
-from sql2parquet.ddl.utils import generate_athena_ddl
+from sql2data.ddl.utils import generate_athena_ddl
 
 
 
@@ -38,7 +38,7 @@ def test_generate_athena_ddl_basic():
 
 import unittest
 import pyarrow as pa
-from sql2parquet.ddl.utils import arrow_to_athena_type
+from sql2data.ddl.utils import arrow_to_athena_type
 
 class TestArrowToAthenaType(unittest.TestCase):
     def test_basic_types(self):

@@ -1,4 +1,4 @@
-#sql2parquet/redshift_unload.py
+#sql2data/redshift_unload.py
 
 def run_unload(db_url, query, s3_output_prefix, iam_role):
     import psycopg

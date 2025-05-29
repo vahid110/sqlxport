@@ -1,4 +1,4 @@
-# sql2parquet/core/extract.py
+# sql2data/core/extract.py
 import pandas as pd
 import sqlite3
 import psycopg

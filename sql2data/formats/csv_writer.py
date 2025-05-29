@@ -1,4 +1,4 @@
-# sql2parquet/formats/csv_writer.py
+# sql2data/formats/csv_writer.py
 
 import os
 import pandas as pd

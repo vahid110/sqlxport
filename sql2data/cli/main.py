@@ -1,12 +1,12 @@
-# sql2parquet/cli/main.py
+# sql2data/cli/main.py
 import click
 from dotenv import load_dotenv
 import os
-from sql2parquet.core.extract import fetch_query_as_dataframe
-from sql2parquet.core.storage import upload_file_to_s3, list_s3_objects, preview_s3_parquet, preview_local_parquet
-from sql2parquet.redshift_unload import run_unload
-from sql2parquet.formats.registry import get_writer
-from sql2parquet.ddl.utils import generate_athena_ddl as build_athena_ddl
+from sql2data.core.extract import fetch_query_as_dataframe
+from sql2data.core.storage import upload_file_to_s3, list_s3_objects, preview_s3_parquet, preview_local_parquet
+from sql2data.redshift_unload import run_unload
+from sql2data.formats.registry import get_writer
+from sql2data.ddl.utils import generate_athena_ddl as build_athena_ddl
 
 def validate_options(db_url, query, output_file, output_dir, partition_by,
                      generate_athena_ddl, athena_s3_prefix, athena_table_name,

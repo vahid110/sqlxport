@@ -1,9 +1,9 @@
-# sql2parquet/formats/parquet_writer.py
+# sql2data/formats/parquet_writer.py
 import os
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-from sql2parquet.formats.base import FormatWriter
+from sql2data.formats.base import FormatWriter
 
 class ParquetWriter(FormatWriter):
     def write(self, df: pd.DataFrame, file_path: str) -> None:
