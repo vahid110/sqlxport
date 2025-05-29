@@ -1,3 +1,7 @@
+[![codecov](https://codecov.io/gh/vahid110/sql2data/graph/badge.svg?token=LUDLBXTE9S)](https://codecov.io/gh/vahid110/sql2data)
+
+![CI](https://github.com/vahid110/sql2data/actions/workflows/ci.yml/badge.svg)
+
 
 # sql2data
 
