@@ -1,13 +1,14 @@
-# sql2data/cli/main.py
 import click
-from dotenv import load_dotenv
 import os
+import sys
+from dotenv import load_dotenv
+from importlib.metadata import version, PackageNotFoundError
+
 from sql2data.core.extract import fetch_query_as_dataframe
 from sql2data.core.storage import upload_file_to_s3, list_s3_objects, preview_s3_parquet, preview_local_parquet
 from sql2data.redshift_unload import run_unload
 from sql2data.formats.registry import get_writer
 from sql2data.ddl.utils import generate_athena_ddl as build_athena_ddl
-from importlib.metadata import version, PackageNotFoundError
 
 try:
     __version__ = version("sql2data")
@@ -26,19 +27,7 @@ def validate_options(db_url, query, output_file, output_dir, partition_by,
     if format not in {"parquet", "csv"}:
         raise click.UsageError(f"Unsupported format '{format}'. Supported formats are: parquet, csv.")
 
-load_dotenv()
-
-if "S3_ENDPOINT" in os.environ and not os.getenv("OVERRIDE_S3_ENDPOINT"):
-    print(f"❌ Refusing to proceed: environment variable S3_ENDPOINT={os.getenv('S3_ENDPOINT')} may override AWS S3.")
-    print(f"   To ignore this, unset S3_ENDPOINT or pass --s3-endpoint explicitly.")
-    exit(1)
-
-def warn_if_s3_endpoint_suspicious(endpoint):
-    if endpoint and "amazonaws.com" not in endpoint:
-        print(f"⚠️  Warning: Using custom S3 endpoint '{endpoint}'. If you're targeting AWS, this may be misconfigured.", flush=True)
-
-@click.command()
-@click.version_option(__version__, "--version", "-v", message="%(version)s")
+@click.command("run")
 @click.option('--db-url', default=lambda: os.getenv("DB_URL"), help='PostgreSQL DB URL')
 @click.option('--query', required=False, help='SQL query to run')
 @click.option('--output-file', required=False, help='Output file path')
@@ -63,12 +52,20 @@ def warn_if_s3_endpoint_suspicious(endpoint):
 @click.option('--athena-table-name', default="my_table", help='Table name for Athena DDL')
 @click.option('--generate-env-template', is_flag=True, help='Write .env.example file')
 @click.option('--verbose', is_flag=True, help='Print debug output')
-def cli(db_url, query, output_file, output_dir, partition_by, s3_bucket, s3_key, s3_endpoint,
+@click.pass_context
+def run(ctx, db_url, query, output_file, output_dir, partition_by, s3_bucket, s3_key, s3_endpoint,
         s3_access_key, s3_secret_key, aws_region, upload_output_dir, format,
         use_redshift_unload, iam_role, s3_output_prefix,
         list_s3_files, preview_s3_file, preview_local_file,
         generate_athena_ddl, athena_s3_prefix, athena_table_name,
         generate_env_template, verbose):
+
+    load_dotenv()
+
+    if "S3_ENDPOINT" in os.environ and not os.getenv("OVERRIDE_S3_ENDPOINT"):
+        print(f"❌ Refusing to proceed: environment variable S3_ENDPOINT={os.getenv('S3_ENDPOINT')} may override AWS S3.")
+        print(f"   To ignore this, unset S3_ENDPOINT or pass --s3-endpoint explicitly.")
+        ctx.exit(1)
 
     if verbose:
         print("🔧 Effective config:")
@@ -83,6 +80,10 @@ def cli(db_url, query, output_file, output_dir, partition_by, s3_bucket, s3_key,
         db_url, query, output_file, output_dir, partition_by,
         generate_athena_ddl, athena_s3_prefix, athena_table_name, format
     )
+
+    def warn_if_s3_endpoint_suspicious(endpoint):
+        if endpoint and "amazonaws.com" not in endpoint:
+            print(f"⚠️  Warning: Using custom S3 endpoint '{endpoint}'. If you're targeting AWS, this may be misconfigured.", flush=True)
 
     warn_if_s3_endpoint_suspicious(s3_endpoint)
 
@@ -185,6 +186,24 @@ S3_OUTPUT_PREFIX=s3://data-exports/unload/
         raise click.UsageError("Provide either --output-file or --output-dir.")
 
     print("✅ Done.")
+
+@click.group(invoke_without_command=True)
+@click.version_option(__version__, "--version", "-v", message="%(version)s")
+@click.pass_context
+def cli(ctx):
+    """sql2data CLI entrypoint"""
+    pass
+
+@cli.result_callback()
+@click.pass_context
+def process_cli(ctx, result, **kwargs):
+    if ctx.invoked_subcommand is None:
+        if "--help" in sys.argv or "-h" in sys.argv:
+            click.echo(run.get_help(ctx))
+        else:
+            ctx.invoke(run)
+
+cli.add_command(run)
 
 if __name__ == "__main__":
     cli()
