@@ -7,6 +7,12 @@ from sql2data.core.storage import upload_file_to_s3, list_s3_objects, preview_s3
 from sql2data.redshift_unload import run_unload
 from sql2data.formats.registry import get_writer
 from sql2data.ddl.utils import generate_athena_ddl as build_athena_ddl
+from importlib.metadata import version, PackageNotFoundError
+
+try:
+    __version__ = version("sql2data")
+except PackageNotFoundError:
+    __version__ = "unknown"
 
 def validate_options(db_url, query, output_file, output_dir, partition_by,
                      generate_athena_ddl, athena_s3_prefix, athena_table_name,
@@ -32,6 +38,7 @@ def warn_if_s3_endpoint_suspicious(endpoint):
         print(f"⚠️  Warning: Using custom S3 endpoint '{endpoint}'. If you're targeting AWS, this may be misconfigured.", flush=True)
 
 @click.command()
+@click.version_option(__version__, "--version", "-v", message="%(version)s")
 @click.option('--db-url', default=lambda: os.getenv("DB_URL"), help='PostgreSQL DB URL')
 @click.option('--query', required=False, help='SQL query to run')
 @click.option('--output-file', required=False, help='Output file path')

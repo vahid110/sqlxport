@@ -1,0 +1,5 @@
+recursive-include sql2data/formats *.py
+recursive-include sql2data/ddl *.py
+recursive-include sql2data/core *.py
+recursive-include sql2data/cli *.py
+recursive-include sql2data *.py

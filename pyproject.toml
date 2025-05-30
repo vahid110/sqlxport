@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sql2data"
-version = "0.1.0"
-description = "Export SQL query results to Parquet and upload to S3 or MinIO"
+version = "0.1.2"
+description = "Export SQL query results to Parquet and CSV... and upload to S3 or MinIO"
 authors = [
     { name="Vahid Saber" }
 ]
@@ -28,3 +28,7 @@ dev = ["pytest", "pytest-cov", "click", "python-dotenv", "boto3"]
 
 [project.scripts]
 sql2data = "sql2data.cli.main:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
