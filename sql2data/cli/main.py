@@ -27,7 +27,7 @@ def validate_options(db_url, query, output_file, output_dir, partition_by,
     if format not in {"parquet", "csv"}:
         raise click.UsageError(f"Unsupported format '{format}'. Supported formats are: parquet, csv.")
 
-@click.command("run")
+@click.command()
 @click.option('--db-url', default=lambda: os.getenv("DB_URL"), help='PostgreSQL DB URL')
 @click.option('--query', required=False, help='SQL query to run')
 @click.option('--output-file', required=False, help='Output file path')
@@ -40,7 +40,7 @@ def validate_options(db_url, query, output_file, output_dir, partition_by,
 @click.option('--s3-secret-key', default=lambda: os.getenv("S3_SECRET_KEY"), help='S3 secret key')
 @click.option('--aws-region', default=lambda: os.getenv("AWS_DEFAULT_REGION", "us-east-1"), help='AWS region')
 @click.option('--upload-output-dir', is_flag=True, help='Upload all partitioned files to S3')
-@click.option('--format', default="parquet", help='Output format (parquet, etc)')
+@click.option('--format', default="parquet", help='Output format (parquet, csv)')
 @click.option('--use-redshift-unload', is_flag=True, help='Use Redshift UNLOAD instead of SQL query')
 @click.option('--iam-role', default=lambda: os.getenv("IAM_ROLE"), help='IAM role for UNLOAD')
 @click.option('--s3-output-prefix', default=lambda: os.getenv("S3_OUTPUT_PREFIX"), help='S3 path for UNLOAD output')
@@ -138,9 +138,6 @@ S3_OUTPUT_PREFIX=s3://data-exports/unload/
     if not query and not use_redshift_unload:
         raise click.UsageError("Missing required option '--query'.")
 
-    if output_file and output_dir:
-        raise click.UsageError("Choose only one of --output-file or --output-dir")
-
     writer = get_writer(format)
 
     if use_redshift_unload:
@@ -192,16 +189,13 @@ S3_OUTPUT_PREFIX=s3://data-exports/unload/
 @click.pass_context
 def cli(ctx):
     """sql2data CLI entrypoint"""
-    pass
-
-@cli.result_callback()
-@click.pass_context
-def process_cli(ctx, result, **kwargs):
     if ctx.invoked_subcommand is None:
-        if "--help" in sys.argv or "-h" in sys.argv:
-            click.echo(run.get_help(ctx))
-        else:
-            ctx.invoke(run)
+        ctx.invoke(run)
+
+@cli.command()
+@click.pass_context
+def help(ctx):
+    click.echo(run.get_help(ctx))
 
 cli.add_command(run)
 
