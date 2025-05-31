@@ -1,0 +1,4 @@
+id,product,region,amount,sale_date
+1,Widget A,EMEA,1200,2024-05-01
+2,Widget B,NA,800,2024-05-02
+3,Widget C,APAC,1500,2024-05-03
