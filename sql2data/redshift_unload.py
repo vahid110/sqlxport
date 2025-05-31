@@ -1,17 +1,11 @@
-#sql2data/redshift_unload.py
-
 def run_unload(db_url, query, s3_output_prefix, iam_role):
     import psycopg
-    import textwrap
 
+    from sql2data.redshift_unload import generate_unload_statement
+
+    # Clean query and generate UNLOAD SQL
     query_clean = query.strip().rstrip(';').replace('\n', ' ')
-
-    unload_sql = textwrap.dedent(f"""
-        UNLOAD ('{query_clean}')
-        TO '{s3_output_prefix}'
-        IAM_ROLE '{iam_role}'
-        FORMAT AS PARQUET;
-    """).strip()
+    unload_sql = generate_unload_statement(query_clean, s3_output_prefix, iam_role, format="parquet")
 
     print("📤 Executing UNLOAD:")
     print(unload_sql)
