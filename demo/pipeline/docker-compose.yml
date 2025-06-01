@@ -1,0 +1,49 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: demo-db-pipeline
+    restart: always
+    environment:
+      POSTGRES_DB: demo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d  # seed SQL files here
+    networks:
+      - default
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - miniodata:/data
+    networks:
+      - default
+
+  spark-runner:
+    image: bitnami/spark:3.5
+    container_name: spark-runner
+    entrypoint: [ "tail", "-f", "/dev/null" ]
+    volumes:
+      - ./phase2:/opt/spark_job
+    networks:
+      - default
+
+volumes:
+  pgdata:
+  miniodata:
+
+networks:
+  default:
