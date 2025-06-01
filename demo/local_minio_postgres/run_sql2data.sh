@@ -2,7 +2,7 @@
 set -e
 
 # PostgreSQL connection URL
-DB_URL="postgresql://postgres:mysecretpassword@localhost:5432/demo"
+DB_URL="postgresql://postgres:postgres@localhost:5432/demo"
 
 # SQL query
 QUERY="SELECT * FROM sales"

@@ -105,6 +105,27 @@ rm -rf delta_output/ sales.parquet
 
 ---
 
+## 🛠️ Troubleshooting
+
+### PostgreSQL port 5432 already in use?
+
+You may see this error:
+
+```
+Bind for 0.0.0.0:5432 failed: port is already allocated
+```
+
+It means another process is using PostgreSQL's default port. To resolve:
+
+```bash
+docker ps | grep 5432
+docker stop <container_id>
+```
+
+Then re-run the demo.
+
+---
+
 ## 🧠 Notes
 
 - This demo uses Delta Lake's file-based transactional log format via PySpark.
