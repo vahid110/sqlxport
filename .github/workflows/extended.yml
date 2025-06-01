@@ -1,0 +1,35 @@
+name: Extended Demo Pipeline
+
+on:
+  workflow_dispatch:  # Manual trigger only for now
+
+jobs:
+  spark_minio_demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      docker:
+        image: docker:20.10.16
+        options: --privileged
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m venv venv
+        source venv/bin/activate
+        pip install -U pip
+        pip install -e .[dev]
+
+    - name: Run Spark + MinIO pipeline demo
+      run: |
+        cd demo/spark_minio_postgres
+        ./run_full_pipeline.sh --partitioned --format parquet --use-s3 --use-spark --no-preview
