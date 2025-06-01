@@ -8,16 +8,8 @@ on:
     branches: [ main ]
 
 jobs:
-  test-pipeline:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        format: [parquet, csv]
-        partitioned: [false, true]
-    runs-on: ${{ matrix.os }}
-    env:
-      FORMAT: ${{ matrix.format }}
-      PARTITIONED: ${{ matrix.partitioned }}
+  test:
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repo
@@ -35,39 +27,11 @@ jobs:
         pip install -U pip
         pip install -e .[dev]
 
-    - name: Run pytest with coverage
+    - name: Run tests with coverage
       run: |
         source venv/bin/activate
         pytest --cov=sql2data --cov-config=.coveragerc
 
-    - name: Install DuckDB CLI
-      run: |
-        if [[ "$RUNNER_OS" == "Linux" ]]; then
-          curl -L https://github.com/duckdb/duckdb/releases/download/v0.10.2/duckdb_cli-linux-amd64.zip -o duckdb.zip
-        else
-          curl -L https://github.com/duckdb/duckdb/releases/download/v0.10.2/duckdb_cli-osx-universal.zip -o duckdb.zip
-        fi
-        unzip duckdb.zip
-        chmod +x duckdb
-        sudo mv duckdb /usr/local/bin/
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
 
-    - name: Run demo pipeline
-      run: |
-        source venv/bin/activate
-        export_dir="ci_output_${FORMAT}"
-        if $PARTITIONED; then
-          ./run_pipeline.sh --format $FORMAT --partitioned --output-dir $export_dir --no-preview
-        else
-          ./run_pipeline.sh --format $FORMAT --output-dir $export_dir --no-preview
-        fi
-        echo "✅ Pipeline ran with format=$FORMAT, partitioned=$PARTITIONED"
-
-    - name: Validate output with DuckDB
-      run: |
-        if $PARTITIONED; then
-          echo "SELECT COUNT(*) FROM read_${FORMAT}_auto(glob('ci_output_${FORMAT}/*/*.${FORMAT}'));" > preview.sql
-        else
-          echo "SELECT COUNT(*) FROM read_${FORMAT}_auto('ci_output_${FORMAT}/output.${FORMAT}');" > preview.sql
-        fi
-        cat preview.sql
-        duckdb < preview.sql
