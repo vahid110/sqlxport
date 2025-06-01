@@ -26,11 +26,11 @@ sleep 10
 
 # Seed the PostgreSQL database with 3x1M rows
 echo "🌋 Seeding PostgreSQL with 1M rows..."
-docker compose exec demo-db psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'demo'" | grep -q 1 || \
-  docker compose exec demo-db psql -U postgres -c "CREATE DATABASE demo;"
-docker compose exec demo-db psql -U postgres -d demo -c "CREATE TABLE IF NOT EXISTS sales (id SERIAL PRIMARY KEY, region TEXT, amount NUMERIC);"
-docker compose exec demo-db psql -U postgres -d demo -c "TRUNCATE TABLE sales;"
-docker compose exec demo-db psql -U postgres -d demo -c "
+docker compose exec demo-db-spark-minio-postgres psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'demo'" | grep -q 1 || \
+  docker compose exec demo-db-spark-minio-postgres psql -U postgres -c "CREATE DATABASE demo;"
+docker compose exec demo-db-spark-minio-postgres psql -U postgres -d demo -c "CREATE TABLE IF NOT EXISTS sales (id SERIAL PRIMARY KEY, region TEXT, amount NUMERIC);"
+docker compose exec demo-db-spark-minio-postgres psql -U postgres -d demo -c "TRUNCATE TABLE sales;"
+docker compose exec demo-db-spark-minio-postgres psql -U postgres -d demo -c "
   INSERT INTO sales (region, amount)
   SELECT region, ROUND((random() * 1000)::numeric, 2)
   FROM generate_series(1, 1000000),

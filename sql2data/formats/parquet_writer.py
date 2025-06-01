@@ -22,3 +22,9 @@ class ParquetWriter(FormatWriter):
         else:
             os.makedirs(output_dir, exist_ok=True)
             pq.write_table(table, os.path.join(output_dir, "part-0000.parquet"))
+
+    def write_flat(self, df: pd.DataFrame, output_dir: str):
+        os.makedirs(output_dir, exist_ok=True)
+        output_path = os.path.join(output_dir, "output.parquet")
+        table = pa.Table.from_pandas(df)
+        pq.write_table(table, output_path)

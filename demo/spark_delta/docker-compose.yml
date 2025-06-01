@@ -1,9 +1,9 @@
 version: "3.8"
 
 services:
-  demo-db:
+  demo-db-spark-delta:
     image: postgres:15
-    container_name: demo-db
+    container_name: demo-db-spark-delta
     ports:
       - "5432:5432"
     environment:

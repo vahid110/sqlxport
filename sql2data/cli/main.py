@@ -149,7 +149,11 @@ S3_OUTPUT_PREFIX=s3://data-exports/unload/
 
     if output_dir:
         print(f"💾 Saving partitioned output to {output_dir}...")
-        writer.write_partitioned(df, output_dir, partition_by)
+        if partition_by:
+            writer.write_partitioned(df, output_dir, partition_by)
+        else:
+            writer.write_flat(df, output_dir)
+
         if s3_bucket and s3_key:
             print("☁️ Uploading directory recursively to S3...")
             for root, _, files in os.walk(output_dir):

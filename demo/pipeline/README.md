@@ -1,113 +1,125 @@
-# 🛠️ sql2data Pipeline Demo (Phase 1)
+# sql2data Demo Pipeline
 
-This demo shows a realistic but minimal ETL pipeline built with **bash scripts** using `sql2data`, DuckDB, and optionally MinIO/S3 as the target.
-
----
-
-## 🎯 Goal
-
-Simulate a production-like ETL pipeline that:
-- Extracts data from PostgreSQL
-- Transforms and optionally partitions it (Parquet/CSV)
-- Validates and previews output
-- Stores to local or S3-compatible bucket
+This demo showcases how to export data from a PostgreSQL database to different formats (Parquet or CSV), optionally partitioned by a column (e.g., `region`), and optionally upload the result to MinIO (S3-compatible storage). It also provides optional preview functionality using DuckDB.
 
 ---
 
-## 📦 Requirements
-
-- Docker + Docker Compose
-- Python 3 (`sql2data`, `pandas`, `duckdb`)
-- Optional: MinIO or real S3 credentials
+## 🧩 Features
+- Export from PostgreSQL to:
+  - Flat Parquet
+  - Partitioned Parquet
+  - Flat CSV
+  - Partitioned CSV
+- Optional upload to MinIO (S3-compatible)
+- Optional preview with DuckDB (row count, partition distribution)
+- Optional Spark processing phase (can be enabled)
 
 ---
 
-## 🚦 How to Run
+## 🏗️ Setup
 
+1. Make sure PostgreSQL and MinIO services are running (can be launched via Docker).
+2. Activate the Python virtual environment if not already active.
+3. Install DuckDB CLI for preview functionality (optional):
+   ```bash
+   brew install duckdb  # or download from https://duckdb.org
+   ```
+---
+
+## 🛠️ Developer Notes
+- `run_pipeline.sh` orchestrates extraction, saving, and previewing.
+- `run_full_pipeline.sh` additionally triggers Spark Delta Lake transformation.
+- Internally uses `sql2data run` CLI (`write_flat` or `write_partitioned`).
+- S3 uploads done via Dockerized `mc` tool.
+
+### 🔄 Internal Pipeline Stages
+
+| Stage     | Description                                     | Tool         |
+|-----------|-------------------------------------------------|--------------|
+| Extract   | Run SQL query and fetch results from PostgreSQL | `sql2data`   |
+| Transform | Convert to Parquet or CSV (flat or partitioned) | `sql2data`   |
+| Validate  | Preview output using row counts or partitioning | `duckdb`     |
+| Load      | Upload to MinIO (if enabled)                    | `mc` (MinIO) |
+| Delta     | (Optional) Spark transformation to Delta Lake   | `spark-submit` |
+
+---
+
+## 🚀 Usage Examples
+
+### 1. Flat Parquet (local only)
 ```bash
-./run_pipeline.sh [--partitioned] [--use-s3] [--format csv|parquet] [--output-dir my_output]
+./run_pipeline.sh --format parquet --output-dir flat_parquet
 ```
 
-### Examples
+### 2. Partitioned Parquet (local only)
+```bash
+./run_pipeline.sh --partitioned --format parquet --output-dir sales_partitioned_parquet
+```
 
-- Local, flat Parquet:
-  ```bash
-  ./run_pipeline.sh
+### 3. Flat CSV (local only)
+```bash
+./run_pipeline.sh --format csv --output-dir flat_csv
+```
+
+### 4. Partitioned CSV (local only)
+```bash
+./run_pipeline.sh --partitioned --format csv --output-dir sales_csv
+```
+
+### 5. Partitioned Parquet + Upload to S3
+```bash
+./run_pipeline.sh --partitioned --format parquet --output-dir parquet_s3 --use-s3
+```
+
+### 6. Flat Parquet + Upload to S3
+```bash
+./run_pipeline.sh --format parquet --output-dir flat_parquet --use-s3
+```
+
+### 7. Disable Preview
+```bash
+./run_pipeline.sh --format parquet --no-preview
+```
+
+### 8. Enable Spark Phase (experimental)
+```bash
+./run_pipeline.sh --partitioned --format parquet --use-spark
+```
+
+---
+
+## 📂 Output Structure
+
+- Flat:
+  ```
+  output_dir/
+    └── output.parquet or output.csv
+  ```
+- Partitioned:
+  ```
+  output_dir/
+    ├── region=NA/
+    │   └── part-0000.parquet or .csv
+    ├── region=EMEA/
+    │   └── part-0000.parquet or .csv
+    └── region=APAC/
+        └── part-0000.parquet or .csv
   ```
 
-- Local, partitioned Parquet:
-  ```bash
-  ./run_pipeline.sh --partitioned
-  ```
+---
 
-- Upload to S3/MinIO:
-  ```bash
-  ./run_pipeline.sh --use-s3 --partitioned --format parquet --output-dir sales_data
-  ```
+## 📊 Preview with DuckDB
+- Automatically enabled unless `--no-preview` is passed.
+- Shows either total row count (flat) or partitioned counts (if partitioned output).
 
 ---
 
-## 🔄 Stages in the Pipeline
-
-| Stage     | Description                            | Tool         |
-|-----------|----------------------------------------|--------------|
-| Extract   | Run SQL query and fetch results        | sql2data     |
-| Transform | Save to Parquet/CSV                    | sql2data     |
-| Validate  | Check row count and preview sample     | DuckDB/Pandas|
-| Load      | Store locally or to S3/MinIO           | sql2data/mc  |
+## 🛠️ Internal Notes (for developers)
+- Output is saved using `sql2data run` CLI.
+- Uses `write_flat` or `write_partitioned` internally depending on arguments.
+- Phase 2 processing (Spark) is optional and kicked off via `--use-spark`.
+- S3 upload handled via MinIO CLI (`mc`) in Docker.
 
 ---
 
-## 🧪 Output
-
-Output files are saved in:
-- Local: `pipeline_output/` or the `--output-dir` you provide
-- S3: Under `s3://<bucket>/<key>/`
-
-Partitioned outputs follow this structure:
-```
-pipeline_output/
-  ├── region=NA/
-  ├── region=EMEA/
-  └── region=APAC/
-```
-
----
-
-## 🧹 Cleanup
-
-```bash
-docker compose down -v
-rm -rf pipeline_output/
-```
-
----
-
-## 📓 Optional Preview
-
-### With DuckDB
-```bash
-duckdb -c "SELECT COUNT(*) FROM 'pipeline_output/*.parquet'"
-```
-
-### With Jupyter Notebook
-```bash
-jupyter notebook preview.ipynb
-```
-
----
-
-## 📁 Files
-
-- `run_pipeline.sh` — main driver script
-- `extract_config.sh` — DB URL, SQL query, etc.
-- `validate_output.sh` — data validators (row count, schema)
-- `preview.ipynb` — optional visual preview
-
----
-
-## 🚀 Next Phases
-
-- Phase 2: Replace `bash` with Python orchestration
-- Phase 3: Add Apache Airflow
-
+✅ Done! You can now explore `sql2data` end-to-end locally or with S3/Spark integrations.

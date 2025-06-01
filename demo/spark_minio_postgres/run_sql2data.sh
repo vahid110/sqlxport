@@ -13,10 +13,10 @@ sleep 10
 
 # Seed the PostgreSQL database
 echo "🌱 Seeding PostgreSQL..."
-docker compose exec demo-db psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'demo'" | grep -q 1 || \
-  docker compose exec demo-db psql -U postgres -c "CREATE DATABASE demo;"
-docker compose exec demo-db psql -U postgres -d demo -c "CREATE TABLE IF NOT EXISTS sales (id SERIAL PRIMARY KEY, region TEXT, amount NUMERIC);"
-docker compose exec demo-db psql -U postgres -d demo -c "INSERT INTO sales (region, amount) SELECT * FROM (VALUES ('EMEA', 100), ('NA', 200), ('APAC', 150)) AS tmp(region, amount);"
+docker compose exec demo-db-spark-minio-postgres psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'demo'" | grep -q 1 || \
+  docker compose exec demo-db-spark-minio-postgres psql -U postgres -c "CREATE DATABASE demo;"
+docker compose exec demo-db-spark-minio-postgres psql -U postgres -d demo -c "CREATE TABLE IF NOT EXISTS sales (id SERIAL PRIMARY KEY, region TEXT, amount NUMERIC);"
+docker compose exec demo-db-spark-minio-postgres psql -U postgres -d demo -c "INSERT INTO sales (region, amount) SELECT * FROM (VALUES ('EMEA', 100), ('NA', 200), ('APAC', 150)) AS tmp(region, amount);"
 
 echo "🪣 Creating bucket if not exists..."
 docker run --rm --network spark_minio_postgres_default \

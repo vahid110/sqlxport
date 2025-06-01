@@ -9,16 +9,16 @@ docker compose up -d
 
 # Wait for PostgreSQL to initialize
 echo "⏳ Waiting for PostgreSQL to be ready..."
-until docker exec demo-db pg_isready -U postgres &>/dev/null; do
+until docker exec demo-db-spark-delta pg_isready -U postgres &>/dev/null; do
   sleep 1
 done
 
 # Seed the demo database (idempotent)
 echo "🌱 Seeding database..."
-docker exec demo-db psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'demo'" | grep -q 1 ||   docker exec demo-db psql -U postgres -c "CREATE DATABASE demo;"
+docker exec demo-db-spark-delta psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'demo'" | grep -q 1 ||   docker exec demo-db-spark-delta psql -U postgres -c "CREATE DATABASE demo;"
 
-docker exec demo-db psql -U postgres -d demo -c "CREATE TABLE IF NOT EXISTS sales (id SERIAL PRIMARY KEY, region TEXT, amount NUMERIC);"
-docker exec demo-db psql -U postgres -d demo -c "INSERT INTO sales (region, amount) SELECT * FROM (VALUES ('EMEA', 100), ('NA', 200), ('APAC', 150)) AS tmp(region, amount) ON CONFLICT DO NOTHING;"
+docker exec demo-db-spark-delta psql -U postgres -d demo -c "CREATE TABLE IF NOT EXISTS sales (id SERIAL PRIMARY KEY, region TEXT, amount NUMERIC);"
+docker exec demo-db-spark-delta psql -U postgres -d demo -c "INSERT INTO sales (region, amount) SELECT * FROM (VALUES ('EMEA', 100), ('NA', 200), ('APAC', 150)) AS tmp(region, amount) ON CONFLICT DO NOTHING;"
 
 # Export data to Parquet
 echo "📤 Exporting sales table to Parquet with sql2data..."

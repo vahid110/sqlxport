@@ -21,7 +21,7 @@ To delete old outputs and demo data:
 docker compose down -v
 rm -rf delta_output/ sales_delta/ sales_partitioned_delta/
 rm -f sales_delta.parquet sales_partitioned_delta.parquet sales.parquet *.db
-docker rm demo-db demo-minio
+docker rm demo-db-spark-minio-postgres demo-minio
 docker volume rm demo_minio-data spark_delta_pgdata
 ```
 

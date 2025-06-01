@@ -3,6 +3,7 @@
 import os
 import pandas as pd
 from .base import FormatWriter
+
 class CsvWriter(FormatWriter):
     def write(self, df: pd.DataFrame, output_file: str):
         df.to_csv(output_file, index=False)
@@ -18,3 +19,8 @@ class CsvWriter(FormatWriter):
             os.makedirs(partition_path, exist_ok=True)
             file_path = os.path.join(partition_path, "part-0000.csv")
             group.drop(columns=[partition_by]).to_csv(file_path, index=False)
+
+    def write_flat(self, df: pd.DataFrame, output_dir: str):
+        os.makedirs(output_dir, exist_ok=True)
+        file_path = os.path.join(output_dir, "output.csv")
+        df.to_csv(file_path, index=False)

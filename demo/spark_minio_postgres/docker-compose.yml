@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  demo-db:
+  demo-db-spark-minio-postgres:
     image: postgres:15
     environment:
       POSTGRES_USER: postgres
@@ -33,7 +33,7 @@ services:
       context: .
       dockerfile: Dockerfile.spark
     depends_on:
-      - demo-db
+      - demo-db-spark-minio-postgres
       - minio
     volumes:
       - .:/app
