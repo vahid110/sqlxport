@@ -1,0 +1,9 @@
+FROM bitnami/spark:3.4.1
+
+USER root
+
+RUN pip install delta-spark boto3 pandas
+
+WORKDIR /app
+
+COPY spark-defaults.conf /opt/bitnami/spark/conf/
