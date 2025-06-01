@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  demo-db:
+    image: postgres:15
+    container_name: demo-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  spark-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
+    container_name: demo-spark
+    volumes:
+      - .:/app
+    working_dir: /app
+    entrypoint: ["/bin/bash", "-c", "sleep infinity"]
+
+volumes:
+  pgdata:

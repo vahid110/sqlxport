@@ -1,0 +1,7 @@
+FROM bitnami/spark:3.4.1
+
+USER root
+
+# Delta Lake JARs for Spark 3.4 + Scala 2.12
+ADD https://repo1.maven.org/maven2/io/delta/delta-core_2.12/2.4.0/delta-core_2.12-2.4.0.jar /opt/bitnami/spark/jars/
+ADD https://repo1.maven.org/maven2/io/delta/delta-storage/2.4.0/delta-storage-2.4.0.jar /opt/bitnami/spark/jars/
