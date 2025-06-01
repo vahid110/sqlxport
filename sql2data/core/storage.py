@@ -4,6 +4,7 @@ import pandas as pd
 import io
 import os
 import pyarrow.parquet as pq
+import posixpath 
 
 def upload_file_to_s3(
     file_path,
@@ -81,7 +82,8 @@ def upload_folder_to_s3(local_dir, bucket, prefix, access_key, secret_key, endpo
         for filename in files:
             local_path = os.path.join(root, filename)
             relative_path = os.path.relpath(local_path, local_dir)
-            s3_key = os.path.join(prefix, relative_path).replace("\\", "/")
+            # 🔧 Safe S3 key using posix-style joining
+            s3_key = posixpath.join(prefix or '', relative_path)
 
             print(f"☁️ Uploading {relative_path} to s3://{bucket}/{s3_key}")
             s3.upload_file(local_path, bucket, s3_key)

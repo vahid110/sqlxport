@@ -1,6 +1,7 @@
 import click
 import os
 import sys
+import posixpath
 from dotenv import load_dotenv
 from importlib.metadata import version, PackageNotFoundError
 
@@ -149,16 +150,18 @@ S3_OUTPUT_PREFIX=s3://data-exports/unload/
     if output_dir:
         print(f"💾 Saving partitioned output to {output_dir}...")
         writer.write_partitioned(df, output_dir, partition_by)
-        if upload_output_dir and s3_bucket and s3_key:
+        if s3_bucket and s3_key:
+            print("☁️ Uploading directory recursively to S3...")
             for root, _, files in os.walk(output_dir):
                 for file in files:
                     full_path = os.path.join(root, file)
                     rel_path = os.path.relpath(full_path, output_dir)
-                    print(f"☁️ Uploading {rel_path} to s3://{s3_bucket}/{s3_key}/{rel_path}")
+                    object_key = posixpath.join(s3_key, rel_path)  # 🚨 fix here
+                    print(f"   • {rel_path}")
                     upload_file_to_s3(
                         file_path=full_path,
                         bucket_name=s3_bucket,
-                        object_key=f"{s3_key}/{rel_path}",
+                        object_key=object_key,
                         access_key=s3_access_key,
                         secret_key=s3_secret_key,
                         endpoint_url=s3_endpoint,

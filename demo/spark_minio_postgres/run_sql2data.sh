@@ -39,10 +39,18 @@ sql2data run \
 
 # Launch Spark job to process from MinIO
 echo "✨ Launching Spark job to convert Parquet to Delta format..."
-./run_spark_in_docker.sh
+
+# New...
+./run_spark_in_docker.sh "s3a://demo-bucket/sales/sales.parquet" "" "sales_delta"
+
 
 # Verify
 echo "🔍 Verifying Delta output via fallback preview (DuckDB can't read Delta metadata)..."
 duckdb -c "SELECT * FROM 'delta_output/*.parquet' LIMIT 10"
+
+
+# Verify
+echo "🔍 Verifying Delta output via fallback preview (DuckDB can't read Delta metadata)..."
+./verify_outputs.sh sales_delta
 
 echo "✅ Demo complete."
