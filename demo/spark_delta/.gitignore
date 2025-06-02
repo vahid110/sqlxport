@@ -1,0 +1,17 @@
+# Auto-generated output files
+sales.parquet
+delta_output/
+csv_output/
+
+# Jupyter Notebook cache
+.ipynb_checkpoints/
+
+# PySpark temp files
+.metastore_db/
+_derby.log
+
+# VSCode & Python
+*.pyc
+__pycache__/
+venv/
+.env

@@ -1,15 +1,16 @@
 # 🧪 sql2data + Spark + Delta Lake Demo
 
-This demo shows how to extract data from PostgreSQL using [`sql2data`](https://github.com/vahid110/sql2data), convert it to [Delta Lake](https://delta.io) format using Apache Spark, and query it via Spark SQL — all locally and using only open source tools.
+This demo shows how to extract data from PostgreSQL using [`sql2data`](https://github.com/vahid110/sql2data), convert it to [Delta Lake](https://delta.io) and CSV format using Apache Spark, and query the results — all locally using only open source tools.
 
 ---
 
 ## 🚀 Overview
 
 - Extract data from PostgreSQL to Parquet using `sql2data`
-- Convert Parquet to Delta Lake using Apache Spark
-- Query Delta Lake with Spark SQL
-- Optional previews with DuckDB or Jupyter Notebook
+- Convert Parquet to **partitioned Delta Lake** using Apache Spark
+- Export same data as CSV (with header)
+- Query Delta and CSV outputs via Spark SQL
+- Optional preview using DuckDB or Jupyter Notebook
 
 ---
 
@@ -30,40 +31,46 @@ pip install pyspark
 
 ## ▶️ How to Run
 
-### Step 1: Start Services
-
-```bash
-docker compose up -d
-```
-
-Wait ~10 seconds for PostgreSQL to initialize.
-
----
-
-### Step 2: Run the Demo
+### Step 1: Start Services and Run Full Pipeline
 
 ```bash
 chmod +x run_sql2data.sh
 ./run_sql2data.sh
 ```
 
-This script will:
-- Create and seed a PostgreSQL demo database
-- Export data to Parquet with `sql2data`
-- Run a Spark job to convert and query Delta Lake format
-- Print a DuckDB preview command
+This will:
+- Start PostgreSQL and Spark services
+- Create and seed a demo `sales` table in PostgreSQL
+- Export the table to `sales.parquet` via `sql2data`
+- Run a Spark job that:
+  - Writes a **partitioned Delta Lake table** to `delta_output/`
+  - Writes a **CSV export** to `csv_output/`
+  - Previews both via Spark
+  - Validates outputs (partition folders, CSV files)
 
 ---
 
-### Step 3: Optional Preview
+## 🔍 Optional Preview
 
-#### Preview Parquet with DuckDB
+### Preview Parquet with DuckDB
 
 ```bash
 duckdb -c "SELECT * FROM 'sales.parquet' LIMIT 5;"
 ```
 
-#### Preview in Jupyter Notebook
+### Preview Delta fallback with DuckDB (just Parquet files)
+
+```bash
+duckdb -c "SELECT * FROM glob('delta_output/region=*/**/*.parquet') LIMIT 10;"
+```
+
+### Preview CSV manually
+
+```bash
+duckdb -c "SELECT * FROM glob('csv_output/*.csv') LIMIT 5;"
+```
+
+### Preview via Jupyter
 
 ```bash
 jupyter notebook preview.ipynb
@@ -71,28 +78,11 @@ jupyter notebook preview.ipynb
 
 ---
 
-## ✅ Verifying Delta Output
+## ✅ Output Structure
 
-DuckDB **cannot read Delta metadata** directly. To verify the Delta output:
-
-### Option 1: Preview Delta output with Spark shell
-
-```bash
-docker compose exec spark-runner spark-shell   --conf "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension"   --conf "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog"
-```
-
-Then inside the Spark shell:
-
-```scala
-val df = spark.read.format("delta").load("delta_output")
-df.show()
-```
-
-### Option 2: DuckDB fallback (reads Parquet files only)
-
-```bash
-duckdb -c "SELECT * FROM 'delta_output/*.parquet' LIMIT 10"
-```
+- `sales.parquet` — exported with `sql2data`
+- `delta_output/region=.../` — partitioned Delta table
+- `csv_output/part-*.csv` — coalesced CSV file with header
 
 ---
 
@@ -100,7 +90,7 @@ duckdb -c "SELECT * FROM 'delta_output/*.parquet' LIMIT 10"
 
 ```bash
 docker compose down -v
-rm -rf delta_output/ sales.parquet
+rm -rf delta_output/ csv_output/ sales.parquet
 ```
 
 ---
@@ -128,9 +118,9 @@ Then re-run the demo.
 
 ## 🧠 Notes
 
-- This demo uses Delta Lake's file-based transactional log format via PySpark.
-- You can extend this to simulate schema evolution, versioning, or time travel.
-- A future variant of this demo will include cloud-style storage with MinIO.
+- This demo simulates a real-world data lake ingestion and conversion pipeline.
+- You can adapt this to S3 + MinIO or extend it with schema evolution & time travel.
+- Fully self-contained — ideal for testing locally.
 
 ---
 

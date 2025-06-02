@@ -42,7 +42,7 @@ fi
 
 echo -e "\n\033[1;34m🔍 Verifying Delta output via Parquet fallback (DuckDB doesn't support Delta metadata)...\033[0m"
 if command -v duckdb &>/dev/null; then
-  duckdb -c "SELECT * FROM 'delta_output/*.parquet' LIMIT 10"
+  duckdb -c "SELECT * FROM glob('delta_output/region=*/**/*.parquet') LIMIT 10;"
 else
   echo "⚠️ DuckDB not found. Skipping Delta fallback preview."
 fi
