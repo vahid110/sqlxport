@@ -2,6 +2,11 @@
 
 ![CI](https://github.com/vahid110/sqlxport/actions/workflows/ci.yml/badge.svg)
 
+<p align="center">
+  <img src=".github/logo.png" alt="SQLxport Logo" width="200"/>
+</p>
+
+
 # sqlxport
 
 **Modular CLI tool to extract data from PostgreSQL/Redshift and export to various formats (e.g. Parquet, CSV), with optional S3 upload and Athena integration.**
