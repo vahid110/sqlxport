@@ -1,0 +1,46 @@
+services:
+  demo-db:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+
+  demo-minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
+  minio-init:
+    image: minio/mc
+    depends_on:
+      - demo-minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      /usr/bin/mc alias set local http://demo-minio:9000 minioadmin minioadmin;
+      /usr/bin/mc mb -q --ignore-existing local/demo;
+      exit 0;
+      "
+
+  spark-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
+    depends_on:
+      - demo-db
+      - demo-minio
+    volumes:
+      - .:/app
+    command: sleep infinity
+
+
+volumes:
+  minio-data:
