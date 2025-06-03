@@ -1,4 +1,5 @@
-[![codecov](https://codecov.io/gh/vahid110/sqlxport/graph/badge.svg?token=LUDLBXTE9S)](https://codecov.io/gh/vahid110/sqlxport)
+[![PyPI version](https://badge.fury.io/py/sqlxport.svg)](https://pypi.org/project/sqlxport/)
+
 ![CI](https://github.com/vahid110/sqlxport/actions/workflows/ci.yml/badge.svg)
 
 # sqlxport
