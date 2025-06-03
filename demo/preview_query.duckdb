@@ -1,3 +1,0 @@
-SELECT region, SUM(amount) AS total_sales
-FROM 'sales.parquet'
-GROUP BY region;
