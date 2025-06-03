@@ -1,3 +1,6 @@
+include README.md
+include LICENSE
+
 recursive-include sql2data/formats *.py
 recursive-include sql2data/ddl *.py
 recursive-include sql2data/core *.py
