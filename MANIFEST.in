@@ -1,8 +1,8 @@
 include README.md
 include LICENSE
 
-recursive-include sql2data/formats *.py
-recursive-include sql2data/ddl *.py
-recursive-include sql2data/core *.py
-recursive-include sql2data/cli *.py
-recursive-include sql2data *.py
+recursive-include sqlxport/formats *.py
+recursive-include sqlxport/ddl *.py
+recursive-include sqlxport/core *.py
+recursive-include sqlxport/cli *.py
+recursive-include sqlxport *.py

@@ -35,8 +35,8 @@ else
     echo "✅ Bucket '$S3_BUCKET' already exists."
 fi
 
-# Run sql2data
-sql2data run \
+# Run sqlxport
+sqlxport run \
   --db-url "$DB_URL" \
   --query "$QUERY" \
   --output-file "$OUTPUT_FILE" \
@@ -48,4 +48,4 @@ sql2data run \
 
 # Preview output
 echo "👀 Previewing local output file:"
-sql2data run --preview-local-file "$OUTPUT_FILE"
+sqlxport run --preview-local-file "$OUTPUT_FILE"

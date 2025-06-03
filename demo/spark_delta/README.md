@@ -1,12 +1,12 @@
-# 🧪 sql2data + Spark + Delta Lake Demo
+# 🧪 sqlxport + Spark + Delta Lake Demo
 
-This demo shows how to extract data from PostgreSQL using [`sql2data`](https://github.com/vahid110/sql2data), convert it to [Delta Lake](https://delta.io) and CSV format using Apache Spark, and query the results — all locally using only open source tools.
+This demo shows how to extract data from PostgreSQL using [`sqlxport`](https://github.com/vahid110/sqlxport), convert it to [Delta Lake](https://delta.io) and CSV format using Apache Spark, and query the results — all locally using only open source tools.
 
 ---
 
 ## 🚀 Overview
 
-- Extract data from PostgreSQL to Parquet using `sql2data`
+- Extract data from PostgreSQL to Parquet using `sqlxport`
 - Convert Parquet to **partitioned Delta Lake** using Apache Spark
 - Export same data as CSV (with header)
 - Query Delta and CSV outputs via Spark SQL
@@ -18,7 +18,7 @@ This demo shows how to extract data from PostgreSQL using [`sql2data`](https://g
 
 - [Docker](https://docs.docker.com/get-docker/) + Docker Compose
 - Python 3 (with `pyspark` installed)
-- `sql2data` CLI installed and available in your `$PATH`
+- `sqlxport` CLI installed and available in your `$PATH`
 - (Optional) [`duckdb`](https://duckdb.org/) or `jupyter`
 
 Install PySpark if needed:
@@ -34,14 +34,14 @@ pip install pyspark
 ### Step 1: Start Services and Run Full Pipeline
 
 ```bash
-chmod +x run_sql2data.sh
-./run_sql2data.sh
+chmod +x run_sqlxport.sh
+./run_sqlxport.sh
 ```
 
 This will:
 - Start PostgreSQL and Spark services
 - Create and seed a demo `sales` table in PostgreSQL
-- Export the table to `sales.parquet` via `sql2data`
+- Export the table to `sales.parquet` via `sqlxport`
 - Run a Spark job that:
   - Writes a **partitioned Delta Lake table** to `delta_output/`
   - Writes a **CSV export** to `csv_output/`
@@ -80,7 +80,7 @@ jupyter notebook preview.ipynb
 
 ## ✅ Output Structure
 
-- `sales.parquet` — exported with `sql2data`
+- `sales.parquet` — exported with `sqlxport`
 - `delta_output/region=.../` — partitioned Delta table
 - `csv_output/part-*.csv` — coalesced CSV file with header
 

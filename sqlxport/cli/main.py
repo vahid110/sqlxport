@@ -5,14 +5,14 @@ import posixpath
 from dotenv import load_dotenv
 from importlib.metadata import version, PackageNotFoundError
 
-from sql2data.core.extract import fetch_query_as_dataframe
-from sql2data.core.storage import upload_file_to_s3, list_s3_objects, preview_s3_parquet, preview_local_parquet
-from sql2data.redshift_unload import run_unload
-from sql2data.formats.registry import get_writer
-from sql2data.ddl.utils import generate_athena_ddl as build_athena_ddl
+from sqlxport.core.extract import fetch_query_as_dataframe
+from sqlxport.core.storage import upload_file_to_s3, list_s3_objects, preview_s3_parquet, preview_local_parquet
+from sqlxport.redshift_unload import run_unload
+from sqlxport.formats.registry import get_writer
+from sqlxport.ddl.utils import generate_athena_ddl as build_athena_ddl
 
 try:
-    __version__ = version("sql2data")
+    __version__ = version("sqlxport")
 except PackageNotFoundError:
     __version__ = "unknown"
 
@@ -195,7 +195,7 @@ S3_OUTPUT_PREFIX=s3://data-exports/unload/
 @click.version_option(__version__, "--version", "-v", message="%(version)s")
 @click.pass_context
 def cli(ctx):
-    """sql2data CLI entrypoint"""
+    """sqlxport CLI entrypoint"""
     if ctx.invoked_subcommand is None:
         ctx.invoke(run)
 

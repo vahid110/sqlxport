@@ -2,7 +2,7 @@
 set -e
 echo "🟡 Running partitioned Parquet export..."
 
-sql2data run \
+sqlxport run \
   --db-url "postgresql://postgres:mysecretpassword@localhost:5432/demo" \
   --query "SELECT * FROM sales" \
   --output-dir "output_partitioned" \

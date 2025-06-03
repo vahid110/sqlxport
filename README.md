@@ -1,7 +1,7 @@
-[![codecov](https://codecov.io/gh/vahid110/sql2data/graph/badge.svg?token=LUDLBXTE9S)](https://codecov.io/gh/vahid110/sql2data)
-![CI](https://github.com/vahid110/sql2data/actions/workflows/ci.yml/badge.svg)
+[![codecov](https://codecov.io/gh/vahid110/sqlxport/graph/badge.svg?token=LUDLBXTE9S)](https://codecov.io/gh/vahid110/sqlxport)
+![CI](https://github.com/vahid110/sqlxport/actions/workflows/ci.yml/badge.svg)
 
-# sql2data
+# sqlxport
 
 **Modular CLI tool to extract data from PostgreSQL/Redshift and export to various formats (e.g. Parquet, CSV), with optional S3 upload and Athena integration.**
 
@@ -35,7 +35,7 @@ pip install -e .
 ### Basic
 
 ```bash
-sql2data run \
+sqlxport run \
   --db-url postgresql://user:pass@localhost:5432/mydb \
   --query "SELECT * FROM users" \
   --output-file users.parquet \
@@ -45,7 +45,7 @@ sql2data run \
 ### With S3 Upload
 
 ```bash
-sql2data run \
+sqlxport run \
   --db-url postgresql://... \
   --query "..." \
   --output-file users.parquet \
@@ -59,7 +59,7 @@ sql2data run \
 ### Partitioned Export
 
 ```bash
-sql2data run \
+sqlxport run \
   --db-url postgresql://... \
   --query "..." \
   --output-dir output/ \
@@ -69,7 +69,7 @@ sql2data run \
 ### Redshift UNLOAD Mode
 
 ```bash
-sql2data run \
+sqlxport run \
   --use-redshift-unload \
   --db-url redshift+psycopg2://... \
   --query "SELECT * FROM large_table" \
@@ -104,7 +104,7 @@ IAM_ROLE=arn:aws:iam::123456789012:role/MyUnloadRole
 Generate a template with:
 
 ```bash
-sql2data run --generate-env-template
+sqlxport run --generate-env-template
 ```
 
 ---

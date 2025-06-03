@@ -6,7 +6,7 @@ from pathlib import Path
 
 # Start Spark session with Delta support
 spark = SparkSession.builder \
-    .appName("SQL2Data Spark Demo") \
+    .appName("sqlxport Spark Demo") \
     .master("local[*]") \
     .config("spark.driver.host", "127.0.0.1") \
     .config("spark.driver.bindAddress", "127.0.0.1") \

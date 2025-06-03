@@ -1,6 +1,6 @@
-# Redshift UNLOAD to S3 (Manual vs sql2data)
+# Redshift UNLOAD to S3 (Manual vs sqlxport)
 
-This example shows how to use Redshift UNLOAD manually or via sql2data.
+This example shows how to use Redshift UNLOAD manually or via sqlxport.
 
 ## Prerequisites
 
@@ -14,10 +14,10 @@ This example shows how to use Redshift UNLOAD manually or via sql2data.
 ```bash
 python run_manual.py
 ```
-## Option 2: sql2data CLI
+## Option 2: sqlxport CLI
 
 ```bash
-bash run_sql2data.sh
+bash run_sqlxport.sh
 ```
 
 ## Output

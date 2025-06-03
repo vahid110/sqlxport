@@ -1,7 +1,7 @@
 # tests/unit/test_redshift_unload.py
 import unittest
 from unittest.mock import patch, MagicMock
-from sql2data.redshift_unload import run_unload
+from sqlxport.redshift_unload import run_unload
 
 class TestRedshiftUnload(unittest.TestCase):
 

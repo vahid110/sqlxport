@@ -4,7 +4,7 @@ import os
 import shutil
 import pandas as pd
 import unittest
-from sql2data.formats.csv_writer import CsvWriter
+from sqlxport.formats.csv_writer import CsvWriter
 
 
 class TestCsvWriter(unittest.TestCase):

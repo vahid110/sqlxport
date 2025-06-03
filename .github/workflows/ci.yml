@@ -30,7 +30,7 @@ jobs:
     - name: Run tests with coverage
       run: |
         source venv/bin/activate
-        pytest --cov=sql2data --cov-config=.coveragerc
+        pytest --cov=sqlxport --cov-config=.coveragerc
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

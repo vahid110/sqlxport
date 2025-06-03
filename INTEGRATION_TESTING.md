@@ -1,6 +1,6 @@
 # Integration Testing: MinIO + Athena
 
-This guide walks you through testing `sql2data` against a local MinIO instance and AWS Athena using exported data.
+This guide walks you through testing `sqlxport` against a local MinIO instance and AWS Athena using exported data.
 
 ---
 
@@ -27,7 +27,7 @@ mc mb local/data-exports
 ## 🧪 Part 2: Export Sample Data
 
 ```bash
-sql2data \
+sqlxport \
   --query "SELECT * FROM logs" \
   --output-dir exports/ \
   --partition-by log_date \
@@ -44,7 +44,7 @@ sql2data \
 ## 🔍 Part 3: Preview from MinIO
 
 ```bash
-sql2data \
+sqlxport \
   --preview-s3-file \
   --s3-bucket data-exports \
   --s3-key logs/log_date=2024-01-02/part-0000.parquet \
@@ -77,7 +77,7 @@ INSERT INTO logs (message, severity, log_date) VALUES
 
 Generate Sample Parquet Files:
 
-sql2data \
+sqlxport \
   --query "SELECT * FROM logs" \
   --output-dir exports/ \
   --partition-by log_date
@@ -103,7 +103,7 @@ aws --endpoint-url http://localhost:9000 s3 ls s3://test-bucket/athena-logs/ --r
 
 Generate Athena DDL:
 
-sql2data \
+sqlxport \
   --generate-athena-ddl exports/log_date=2024-01-02/part-0000.parquet \
   --athena-s3-prefix s3://data-exports/logs/ \
   --athena-table-name logs \

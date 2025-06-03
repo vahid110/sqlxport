@@ -1,4 +1,4 @@
-# sql2data/formats/csv_writer.py
+# sqlxport/formats/csv_writer.py
 
 import os
 import pandas as pd

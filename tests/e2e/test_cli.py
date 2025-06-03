@@ -4,7 +4,7 @@ import pytest
 import tempfile
 import pandas as pd
 from click.testing import CliRunner
-from sql2data.cli.main import cli
+from sqlxport.cli.main import cli
 from unittest.mock import MagicMock
 
 def create_sample_sqlite_db(with_partition_column=False):
@@ -128,8 +128,8 @@ def test_cli_output_csv_partitioned(tmp_path, monkeypatch):
         "msg": ["foo", "bar"]
     })
 
-    monkeypatch.setattr("sql2data.cli.main.fetch_query_as_dataframe", lambda *_: df)
-    monkeypatch.setattr("sql2data.cli.main.upload_file_to_s3", lambda *args, **kwargs: None)
+    monkeypatch.setattr("sqlxport.cli.main.fetch_query_as_dataframe", lambda *_: df)
+    monkeypatch.setattr("sqlxport.cli.main.upload_file_to_s3", lambda *args, **kwargs: None)
 
     result = runner.invoke(cli, [
         "run",
@@ -170,8 +170,8 @@ def test_cli_partitioned_csv_contents(tmp_path, monkeypatch):
         "msg": ["foo", "bar", "baz"]
     })
 
-    monkeypatch.setattr("sql2data.cli.main.fetch_query_as_dataframe", lambda *_: df)
-    monkeypatch.setattr("sql2data.cli.main.upload_file_to_s3", lambda *args, **kwargs: None)  # 🧯 disable actual upload
+    monkeypatch.setattr("sqlxport.cli.main.fetch_query_as_dataframe", lambda *_: df)
+    monkeypatch.setattr("sqlxport.cli.main.upload_file_to_s3", lambda *args, **kwargs: None)  # 🧯 disable actual upload
 
     result = runner.invoke(cli, [
         "run",
@@ -190,7 +190,7 @@ def test_cli_partitioned_csv_contents(tmp_path, monkeypatch):
 def test_cli_partitioned_csv_empty_result(tmp_path, monkeypatch):
     import pandas as pd
 
-    monkeypatch.setattr("sql2data.cli.main.fetch_query_as_dataframe", lambda *_: pd.DataFrame(columns=["id", "log_date", "msg"]))
+    monkeypatch.setattr("sqlxport.cli.main.fetch_query_as_dataframe", lambda *_: pd.DataFrame(columns=["id", "log_date", "msg"]))
 
     runner = CliRunner()
     output_dir = tmp_path / "csv_parts"
@@ -212,7 +212,7 @@ def test_cli_partitioned_csv_empty_result(tmp_path, monkeypatch):
 
 def test_cli_output_csv_non_partitioned(tmp_path, monkeypatch):
     import pandas as pd
-    import sql2data.cli.main as cli_module
+    import sqlxport.cli.main as cli_module
 
     df = pd.DataFrame({
         "id": [1, 2],
@@ -242,13 +242,13 @@ def test_cli_output_csv_non_partitioned(tmp_path, monkeypatch):
 def test_cli_partitioned_upload_s3(tmp_path, monkeypatch):
     import pandas as pd
 
-    monkeypatch.setattr("sql2data.cli.main.fetch_query_as_dataframe", lambda *_: pd.DataFrame({
+    monkeypatch.setattr("sqlxport.cli.main.fetch_query_as_dataframe", lambda *_: pd.DataFrame({
         "id": [1, 2],
         "cat": ["X", "Y"]
     }))
 
     mock_upload = MagicMock()
-    monkeypatch.setattr("sql2data.cli.main.upload_file_to_s3", mock_upload)
+    monkeypatch.setattr("sqlxport.cli.main.upload_file_to_s3", mock_upload)
 
     monkeypatch.setattr("os.walk", lambda path: [
         (f"{path}/cat=X", [], ["part-0000.csv"]),

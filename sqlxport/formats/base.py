@@ -1,4 +1,4 @@
-# sql2data/formats/base.py
+# sqlxport/formats/base.py
 from abc import ABC, abstractmethod
 import pandas as pd
 

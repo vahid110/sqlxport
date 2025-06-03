@@ -21,8 +21,8 @@ docker exec demo-db-spark-delta psql -U postgres -d demo -c "CREATE TABLE IF NOT
 docker exec demo-db-spark-delta psql -U postgres -d demo -c "INSERT INTO sales (region, amount) SELECT * FROM (VALUES ('EMEA', 100), ('NA', 200), ('APAC', 150)) AS tmp(region, amount) ON CONFLICT DO NOTHING;"
 
 # Export data to Parquet
-echo "📤 Exporting sales table to Parquet with sql2data..."
-sql2data run \
+echo "📤 Exporting sales table to Parquet with sqlxport..."
+sqlxport run \
   --db-url postgresql://postgres:postgres@localhost:5432/demo \
   --query "SELECT * FROM sales" \
   --format parquet \

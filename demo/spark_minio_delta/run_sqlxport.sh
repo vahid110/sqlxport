@@ -1,5 +1,5 @@
 #!/bin/bash
-# demo/spark_minio_delta/run_sql2data.sh
+# demo/spark_minio_delta/run_sqlxport.sh
 
 set -ex
 
@@ -20,8 +20,8 @@ docker compose exec demo-db psql -U postgres -tc "SELECT 1 FROM pg_database WHER
 docker compose exec demo-db psql -U postgres -d demo -c "CREATE TABLE IF NOT EXISTS sales (id SERIAL PRIMARY KEY, region TEXT, amount NUMERIC);"
 docker compose exec demo-db psql -U postgres -d demo -c "INSERT INTO sales (region, amount) SELECT * FROM (VALUES ('EMEA', 100), ('NA', 200), ('APAC', 150)) AS tmp(region, amount) ON CONFLICT DO NOTHING;"
 
-echo -e "\n📤 Exporting sales table to Parquet with sql2data..."
-sql2data run \
+echo -e "\n📤 Exporting sales table to Parquet with sqlxport..."
+sqlxport run \
   --db-url "postgresql://postgres:password@localhost:5432/demo" \
   --query "SELECT * FROM sales" \
   --format parquet \

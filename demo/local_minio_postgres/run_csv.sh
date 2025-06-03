@@ -2,7 +2,7 @@
 set -e
 echo "🔵 Running CSV export..."
 
-sql2data run \
+sqlxport run \
   --db-url "postgresql://postgres:mysecretpassword@localhost:5432/demo" \
   --query "SELECT * FROM sales" \
   --format "csv" \

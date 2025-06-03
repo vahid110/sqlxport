@@ -2,7 +2,7 @@
 
 import textwrap
 import pytest
-from sql2data.redshift_unload import generate_unload_statement
+from sqlxport.redshift_unload import generate_unload_statement
 
 def test_generate_unload_parquet_default():
     sql = generate_unload_statement(

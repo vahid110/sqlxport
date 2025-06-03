@@ -1,4 +1,4 @@
-# sql2data/core/storage.py
+# sqlxport/core/storage.py
 import boto3
 import pandas as pd
 import io

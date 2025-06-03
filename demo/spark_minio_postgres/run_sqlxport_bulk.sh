@@ -43,12 +43,12 @@ docker run --rm --network spark_minio_postgres_default \
   -e MC_HOST_local=http://minioadmin:minioadmin@minio:9000 \
   minio/mc mb -q --ignore-existing local/demo-bucket
 
-# Export data to Parquet and upload to MinIO using sql2data
-echo "📤 Exporting sales table to Parquet in MinIO with sql2data..."
+# Export data to Parquet and upload to MinIO using sqlxport
+echo "📤 Exporting sales table to Parquet in MinIO with sqlxport..."
 
 if [[ $PARTITIONED -eq 1 ]]; then
   echo "📦 Exporting in partitioned mode by region..."
-  sql2data run \
+  sqlxport run \
     --db-url postgresql://postgres:postgres@localhost:5432/demo \
     --query "SELECT * FROM sales" \
     --output-dir "$OUTPUT_DIR" \
@@ -62,7 +62,7 @@ if [[ $PARTITIONED -eq 1 ]]; then
     --aws-region us-east-1
 else
   echo "📦 Exporting in flat (non-partitioned) mode..."
-  sql2data run \
+  sqlxport run \
     --db-url postgresql://postgres:postgres@localhost:5432/demo \
     --query "SELECT * FROM sales" \
     --output-file "$OUTPUT_DIR.parquet" \

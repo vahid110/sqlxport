@@ -24,8 +24,8 @@ docker run --rm --network spark_minio_postgres_default \
   minio/mc mb -q --ignore-existing local/demo-bucket
 
 # Export data to Parquet and upload to MinIO
-echo "📤 Exporting sales table to Parquet in MinIO with sql2data..."
-sql2data run \
+echo "📤 Exporting sales table to Parquet in MinIO with sqlxport..."
+sqlxport run \
   --db-url postgresql://postgres:postgres@localhost:5432/demo \
   --query "SELECT * FROM sales" \
   --output-file sales.parquet \

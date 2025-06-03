@@ -1,4 +1,4 @@
-# Export PostgreSQL to Parquet (Manual vs sql2data)
+# Export PostgreSQL to Parquet (Manual vs sqlxport)
 
 This example demonstrates exporting a PostgreSQL query result to a Parquet file.
 
@@ -7,7 +7,7 @@ This example demonstrates exporting a PostgreSQL query result to a Parquet file.
 - PostgreSQL running locally
 - A table named `users`
 - Python + `pandas`, `pyarrow` (for manual)
-- `sql2data` installed (for CLI example)
+- `sqlxport` installed (for CLI example)
 
 ## Sample Table
 
@@ -30,10 +30,10 @@ INSERT INTO users (name, email, age) VALUES
 ```bash
 python run_manual.py
 ```
-## Option 2: sql2data CLI
+## Option 2: sqlxport CLI
 
 ```bash
-bash run_sql2data.sh
+bash run_sqlxport.sh
 ```
 
 ## Output

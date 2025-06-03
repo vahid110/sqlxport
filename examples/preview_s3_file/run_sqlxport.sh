@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-sql2data run \
+sqlxport run \
   --s3-bucket my-bucket \
   --s3-key users.parquet \
   --s3-access-key AKIA... \

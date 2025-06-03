@@ -1,10 +1,10 @@
 [run]
 omit =
-    sql2data/formats/base.py
-    sql2data/cli/__init__.py
-    sql2data/core/__init__.py
-    sql2data/ddl/__init__.py
-    sql2data/__init__.py
+    sqlxport/formats/base.py
+    sqlxport/cli/__init__.py
+    sqlxport/core/__init__.py
+    sqlxport/ddl/__init__.py
+    sqlxport/__init__.py
 
 [report]
 exclude_lines =

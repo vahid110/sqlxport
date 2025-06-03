@@ -4,11 +4,11 @@ import os
 import unittest
 import tempfile
 from unittest.mock import patch, MagicMock
-from sql2data.core.storage import upload_file_to_s3
-from sql2data.core.storage import upload_folder_to_s3
+from sqlxport.core.storage import upload_file_to_s3
+from sqlxport.core.storage import upload_folder_to_s3
 
 
-@patch("sql2data.core.storage.boto3.client")
+@patch("sqlxport.core.storage.boto3.client")
 def test_upload_file_to_s3(mock_boto_client):
     # Create a temporary test file
     with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
@@ -47,7 +47,7 @@ def test_upload_file_to_s3(mock_boto_client):
 
 class TestStorageFailures(unittest.TestCase):
 
-    @patch("sql2data.core.storage.boto3")
+    @patch("sqlxport.core.storage.boto3")
     def test_upload_with_missing_file(self, mock_boto3):
         mock_client = MagicMock()
         mock_client.upload_file.side_effect = FileNotFoundError("File not found")
@@ -65,7 +65,7 @@ class TestStorageFailures(unittest.TestCase):
 
 class TestStorageErrorCases(unittest.TestCase):
 
-    @patch("sql2data.core.storage.boto3")
+    @patch("sqlxport.core.storage.boto3")
     def test_upload_with_missing_file(self, mock_boto3):
         mock_client = MagicMock()
         mock_client.upload_file.side_effect = FileNotFoundError("File not found")
@@ -82,8 +82,8 @@ class TestStorageErrorCases(unittest.TestCase):
             )
 
 class TestUploadFolder(unittest.TestCase):
-    @patch("sql2data.core.storage.boto3.session.Session")
-    @patch("sql2data.core.storage.os.walk")
+    @patch("sqlxport.core.storage.boto3.session.Session")
+    @patch("sqlxport.core.storage.os.walk")
     def test_upload_folder_to_s3(self, mock_walk, mock_session):
         # Simulate two files
         mock_walk.return_value = [

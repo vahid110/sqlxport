@@ -5,7 +5,7 @@ import pyarrow.parquet as pq
 import os
 import shutil
 import pandas as pd
-from sql2data.formats.parquet_writer import ParquetWriter
+from sqlxport.formats.parquet_writer import ParquetWriter
 
 
 def test_write_single_file(tmp_path):

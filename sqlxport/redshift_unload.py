@@ -1,7 +1,7 @@
 def run_unload(db_url, query, s3_output_prefix, iam_role):
     import psycopg
 
-    from sql2data.redshift_unload import generate_unload_statement
+    from sqlxport.redshift_unload import generate_unload_statement
 
     # Clean query and generate UNLOAD SQL
     query_clean = query.strip().rstrip(';').replace('\n', ' ')

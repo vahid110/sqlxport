@@ -2,7 +2,7 @@
 set -e
 echo "🟢 Running basic Parquet export..."
 
-sql2data run \
+sqlxport run \
   --db-url "postgresql://postgres:mysecretpassword@localhost:5432/demo" \
   --query "SELECT * FROM sales" \
   --output-file "sales.parquet" \
@@ -13,4 +13,4 @@ sql2data run \
   --s3-secret-key "minioadmin"
 
 echo "👀 Previewing local file:"
-sql2data run --preview-local-file "sales.parquet"
+sqlxport run --preview-local-file "sales.parquet"

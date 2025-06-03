@@ -1,11 +1,11 @@
 # Spark + Delta Lake Demo with MinIO and PostgreSQL
 
-This demo showcases how to integrate `sql2data` with a Spark + Delta Lake pipeline using PostgreSQL and MinIO.
+This demo showcases how to integrate `sqlxport` with a Spark + Delta Lake pipeline using PostgreSQL and MinIO.
 
 ## 🧱 Architecture
 
 - **PostgreSQL**: Stores the source `sales` table.
-- **sql2data**: Exports SQL query results to a Parquet file.
+- **sqlxport**: Exports SQL query results to a Parquet file.
 - **Spark**: Reads the Parquet file, writes data to:
   - Delta Lake format (unpartitioned + partitioned)
   - CSV format
@@ -17,7 +17,7 @@ This demo showcases how to integrate `sql2data` with a Spark + Delta Lake pipeli
 
 ```bash
 cd demo/spark_minio_delta
-./run_sql2data.sh
+./run_sqlxport.sh
 ```
 
 This will:
@@ -35,7 +35,7 @@ This will:
 ## 📦 Requirements
 
 - Docker + Docker Compose
-- `sql2data` installed (e.g., `pip install -e .`)
+- `sqlxport` installed (e.g., `pip install -e .`)
 - (Optional) `mc` (MinIO client) for output inspection
 - (Optional) `duckdb` CLI for Delta preview
 
@@ -58,7 +58,7 @@ This will:
 
 ## 📁 Files
 
-- `run_sql2data.sh`: Main driver script.
+- `run_sqlxport.sh`: Main driver script.
 - `Dockerfile.spark`: Custom Spark container with JARs.
 - `docker-compose.yml`: Services for demo.
 - `run_spark_query.py`: Spark job to write + read Delta/CSV.

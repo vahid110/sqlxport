@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-sql2data run \
+sqlxport run \
   --use-redshift-unload \
   --db-url redshift+psycopg2://awsuser:pass@endpoint:5439/dev \
   --query "SELECT * FROM events" \

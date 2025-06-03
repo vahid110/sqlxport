@@ -1,6 +1,6 @@
-# sql2data Local Demo (Self-Run, Free – Hybrid Edition)
+# sqlxport Local Demo (Self-Run, Free – Hybrid Edition)
 
-This demo lets you extract data from PostgreSQL, export to Parquet (basic or partitioned) or CSV using `sql2data`, upload to MinIO (S3-compatible), and query or preview it locally using CLI, DuckDB, or Jupyter.
+This demo lets you extract data from PostgreSQL, export to Parquet (basic or partitioned) or CSV using `sqlxport`, upload to MinIO (S3-compatible), and query or preview it locally using CLI, DuckDB, or Jupyter.
 
 ---
 
@@ -9,7 +9,7 @@ This demo lets you extract data from PostgreSQL, export to Parquet (basic or par
 ### 1. Requirements
 
 - Docker & Docker Compose
-- `sql2data` CLI installed and in your `$PATH`
+- `sqlxport` CLI installed and in your `$PATH`
 - AWS CLI (`brew install awscli`)
 - (Optional) DuckDB or Jupyter for previewing output
 

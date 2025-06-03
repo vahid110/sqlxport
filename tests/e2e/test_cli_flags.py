@@ -1,6 +1,6 @@
 # tests/e2e/test_cli_flags.py
 
-from sql2data.cli.main import cli
+from sqlxport.cli.main import cli
 
 def test_conflicting_output_flags(cli_runner):
     result = cli_runner.invoke(cli, [

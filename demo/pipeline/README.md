@@ -1,4 +1,4 @@
-# sql2data Demo Pipeline
+# sqlxport Demo Pipeline
 
 This demo showcases how to export data from a PostgreSQL database to different formats (Parquet or CSV), optionally partitioned by a column (e.g., `region`), and optionally upload the result to MinIO (S3-compatible storage). It also provides optional preview functionality using DuckDB.
 
@@ -29,15 +29,15 @@ This demo showcases how to export data from a PostgreSQL database to different f
 ## 🛠️ Developer Notes
 - `run_pipeline.sh` orchestrates extraction, saving, and previewing.
 - `run_full_pipeline.sh` additionally triggers Spark Delta Lake transformation.
-- Internally uses `sql2data run` CLI (`write_flat` or `write_partitioned`).
+- Internally uses `sqlxport run` CLI (`write_flat` or `write_partitioned`).
 - S3 uploads done via Dockerized `mc` tool.
 
 ### 🔄 Internal Pipeline Stages
 
 | Stage     | Description                                     | Tool         |
 |-----------|-------------------------------------------------|--------------|
-| Extract   | Run SQL query and fetch results from PostgreSQL | `sql2data`   |
-| Transform | Convert to Parquet or CSV (flat or partitioned) | `sql2data`   |
+| Extract   | Run SQL query and fetch results from PostgreSQL | `sqlxport`   |
+| Transform | Convert to Parquet or CSV (flat or partitioned) | `sqlxport`   |
 | Validate  | Preview output using row counts or partitioning | `duckdb`     |
 | Load      | Upload to MinIO (if enabled)                    | `mc` (MinIO) |
 | Delta     | (Optional) Spark transformation to Delta Lake   | `spark-submit` |
@@ -115,11 +115,11 @@ This demo showcases how to export data from a PostgreSQL database to different f
 ---
 
 ## 🛠️ Internal Notes (for developers)
-- Output is saved using `sql2data run` CLI.
+- Output is saved using `sqlxport run` CLI.
 - Uses `write_flat` or `write_partitioned` internally depending on arguments.
 - Phase 2 processing (Spark) is optional and kicked off via `--use-spark`.
 - S3 upload handled via MinIO CLI (`mc`) in Docker.
 
 ---
 
-✅ Done! You can now explore `sql2data` end-to-end locally or with S3/Spark integrations.
+✅ Done! You can now explore `sqlxport` end-to-end locally or with S3/Spark integrations.

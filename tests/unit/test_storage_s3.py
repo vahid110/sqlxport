@@ -2,11 +2,11 @@
 
 import unittest
 from unittest.mock import patch, MagicMock
-from sql2data.core.storage import list_s3_objects, preview_s3_parquet
+from sqlxport.core.storage import list_s3_objects, preview_s3_parquet
 
 class TestS3Helpers(unittest.TestCase):
 
-    @patch("sql2data.core.storage.boto3.client")
+    @patch("sqlxport.core.storage.boto3.client")
     def test_list_s3_objects_empty(self, mock_client):
         mock_s3 = MagicMock()
         mock_s3.list_objects_v2.return_value = {}
@@ -21,7 +21,7 @@ class TestS3Helpers(unittest.TestCase):
 
         mock_s3.list_objects_v2.assert_called_once()
 
-    @patch("sql2data.core.storage.boto3.client")
+    @patch("sqlxport.core.storage.boto3.client")
     def test_preview_s3_parquet_success(self, mock_client):
         import pyarrow as pa
         import pyarrow.parquet as pq

@@ -4,16 +4,16 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="sql2data",
+    name="sqlxport",
     version="0.1.3",
     author="Vahid Saber",
     author_email="vahid.saber78@gmail.com",
     description="Export SQL query results to Parquet, CSV, and more. Upload to S3 or MinIO.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/vahid110/sql2data",
+    url="https://github.com/vahid110/sqlxport",
     project_urls={
-        "Bug Tracker": "https://github.com/vahid110/sql2data/issues",
+        "Bug Tracker": "https://github.com/vahid110/sqlxport/issues",
     },
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -43,6 +43,6 @@ setup(
         ]
     },
     entry_points={
-        "console_scripts": ["sql2data=sql2data.cli.main:cli"],
+        "console_scripts": ["sqlxport=sqlxport.cli.main:cli"],
     },
 )
