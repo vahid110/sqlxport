@@ -41,6 +41,5 @@ services:
       - .:/app
     command: sleep infinity
 
-
 volumes:
   minio-data:

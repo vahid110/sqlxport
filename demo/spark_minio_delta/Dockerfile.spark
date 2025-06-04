@@ -4,21 +4,17 @@ USER root
 
 WORKDIR /app
 
-# Install curl and clean up
 RUN apt-get update && \
     apt-get install -y curl && \
     rm -rf /var/lib/apt/lists/*
 
-# Create required directory for Delta Lake JARs
 RUN mkdir -p /tmp/jars
 
-# Install Python packages
 RUN pip install --no-cache-dir pyspark pandas duckdb boto3
 
-# Delta Lake version 2.1.0 compatible with Spark 3.3
 RUN curl -L -o /tmp/jars/delta-core_2.12-2.1.0.jar \
     https://repo1.maven.org/maven2/io/delta/delta-core_2.12/2.1.0/delta-core_2.12-2.1.0.jar && \
     curl -L -o /tmp/jars/delta-storage-2.1.0.jar \
     https://repo1.maven.org/maven2/io/delta/delta-storage/2.1.0/delta-storage-2.1.0.jar
-# Optionally drop privileges again
+
 USER 1001
