@@ -6,7 +6,6 @@
   <img src=".github/logo.png" alt="SQLxport Logo" width="200"/>
 </p>
 
-
 # sqlxport
 
 **Modular CLI tool to extract data from PostgreSQL/Redshift and export to various formats (e.g. Parquet, CSV), with optional S3 upload and Athena integration.**
@@ -15,14 +14,26 @@
 
 ## ✅ Features
 
-- 🔄 Run custom SQL queries against PostgreSQL or Redshift
-- 📦 Export to Parquet or CSV (`--format`)
-- 🪣 Upload results to S3 or MinIO
-- 🔄 Redshift `UNLOAD` support
-- 🧩 Partition output by column
-- 📜 Generate Athena `CREATE TABLE` DDL
-- 🔍 Preview local or remote Parquet/CSV files
-- ⚙️ `.env` support for convenient config
+* 🔄 Run custom SQL queries against PostgreSQL or Redshift
+* 📦 Export to Parquet or CSV (`--format`)
+* 🩣 Upload results to S3 or MinIO
+* 🔄 Redshift `UNLOAD` support
+* 🧹 Partition output by column
+* 📜 Generate Athena `CREATE TABLE` DDL
+* 🔍 Preview local or remote Parquet/CSV files
+* ⚙️ `.env` support for convenient config
+
+---
+
+## ❓ Why SQLxport?
+* SQLxport was created to eliminate repetitive data export workflows.
+* Unlike raw scripts or limited GUI tools:
+* ✅ One command gives you SQL → Parquet/CSV → S3
+* 🧱 Works locally, in CI, or inside Docker
+* 🪢 Connects easily to Athena, MinIO, Redshift
+* 🔌 Clean format layer allows future plugins
+
+It’s open, scriptable, and designed for engineers who automate.
 
 ---
 
@@ -93,7 +104,7 @@ pytest -v
 
 ---
 
-## 🧬 Environment Variables
+## 🧪 Environment Variables
 
 You can set options via `.env` or environment:
 
@@ -117,12 +128,12 @@ sqlxport run --generate-env-template
 
 ## 🛠 Roadmap
 
-- ✅ Modular format support
-- ✅ CSV support
-- ⏳ Add `jsonl`, `xlsx` formats
-- ⏳ Plugin system for custom writers/loaders
-- ⏳ SaaS mode or server-side export platform
-- ⏳ Stream output to Kafka/Kinesis
+* ✅ Modular format support
+* ✅ CSV support
+* ⏳ Add `jsonl`, `xlsx` formats
+* ⏳ Plugin system for custom writers/loaders
+* ⏳ SaaS mode or server-side export platform
+* ⏳ Stream output to Kafka/Kinesis
 
 ---
 
@@ -133,9 +144,9 @@ sqlxport run --generate-env-template
 
 ---
 
-## 👨‍💻 Author
+## 👨‍💼 Author
 
-Vahid Saber  
+Vahid Saber
 Built with ❤️ for data engineers and developers.
 
 ---
