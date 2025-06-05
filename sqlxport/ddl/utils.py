@@ -4,24 +4,36 @@ import pyarrow.parquet as pq
 
 import os
 
+import pyarrow.parquet as pq
+import os
+
 def find_first_parquet(path):
+    #print(f"[DEBUG] Looking for .parquet files under: {path}")
     if os.path.isfile(path) and path.endswith(".parquet"):
+        #print(f"[DEBUG] Found single parquet file: {path}")
         return path
     for root, _, files in os.walk(path):
         for f in files:
             if f.endswith(".parquet"):
-                return os.path.join(root, f)
+                found = os.path.join(root, f)
+                #print(f"[DEBUG] Found parquet file: {found}")
+                return found
     raise FileNotFoundError(f"No .parquet files found under: {path}")
 
 def generate_athena_ddl(local_parquet_path, s3_prefix, table_name, partition_cols=None):
     real_file = find_first_parquet(local_parquet_path)
-    table = pq.ParquetFile(real_file).read()
-    schema = table.schema
+    #print(f"[DEBUG] Using Parquet file: {real_file}")
+
+    schema = pq.read_schema(real_file)
+    #print(f"[DEBUG] Full schema fields:")
+    # for field in schema:
+    #     print(f"  - {field.name}: {field.type}")
 
     ddl = f"CREATE EXTERNAL TABLE IF NOT EXISTS {table_name} (\n"
     for field in schema:
         if partition_cols and field.name in partition_cols:
-            continue  # skip partition columns from main schema
+            #print(f"[DEBUG] Skipping partition column from main schema: {field.name}")
+            continue
         athena_type = arrow_to_athena_type(field.type)
         ddl += f"  {field.name} {athena_type},\n"
     ddl = ddl.rstrip(",\n") + "\n)\n"
@@ -35,7 +47,11 @@ def generate_athena_ddl(local_parquet_path, s3_prefix, table_name, partition_col
     ddl += "STORED AS PARQUET\n"
     ddl += f"LOCATION '{s3_prefix}';\n"
 
+    #print(f"[DEBUG] Generated DDL:\n" + ddl)
     return ddl
+
+
+
 
 def arrow_to_athena_type(arrow_type):
     import pyarrow as pa

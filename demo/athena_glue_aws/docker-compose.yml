@@ -1,0 +1,13 @@
+version: "3.8"
+services:
+  demo-db:
+    image: postgres:14
+    container_name: sqlxport_demo_postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: demo
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init:/docker-entrypoint-initdb.d

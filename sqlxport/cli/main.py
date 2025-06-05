@@ -1,3 +1,5 @@
+# cli/main.py
+
 import click
 import os
 import sys
@@ -138,7 +140,7 @@ S3_OUTPUT_PREFIX=s3://data-exports/unload/
             raise click.UsageError("Missing --athena-s3-prefix")
         ddl = build_athena_ddl(generate_athena_ddl, athena_s3_prefix, athena_table_name,
                                partition_cols=[partition_by] if partition_by else None)
-        print("\n📜 Athena CREATE TABLE statement:\n")
+        # print("\n📜 Athena CREATE TABLE statement:\n")
         print(ddl)
         return
 
