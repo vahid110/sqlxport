@@ -28,6 +28,13 @@ def validate_options(db_url, query, output_file, output_dir, partition_by,
     if format not in {"parquet", "csv"}:
         raise click.UsageError(f"Unsupported format '{format}'. Supported formats are: parquet, csv.")
 
+def warn_if_s3_endpoint_suspicious(endpoint, provider):
+    if provider == "aws" and endpoint and "amazonaws.com" not in endpoint:
+        print(f"⚠️  Warning: Using custom S3 endpoint '{endpoint}' while provider is set to 'aws'.", flush=True)
+    elif provider == "minio" and not endpoint:
+        print(f"⚠️  Warning: No --s3-endpoint specified while using 'minio' provider.", flush=True)
+
+
 @click.command()
 @click.option('--db-url', default=lambda: os.getenv("DB_URL"), help='PostgreSQL DB URL')
 @click.option('--query', required=False, help='SQL query to run')
@@ -83,12 +90,6 @@ def run(ctx, db_url, query, output_file, output_dir, partition_by, s3_bucket, s3
         db_url, query, output_file, output_dir, partition_by,
         generate_athena_ddl, athena_s3_prefix, athena_table_name, format
     )
-
-    def warn_if_s3_endpoint_suspicious(endpoint, provider):
-        if provider == "aws" and endpoint and "amazonaws.com" not in endpoint:
-            print(f"⚠️  Warning: Using custom S3 endpoint '{endpoint}' while provider is set to 'aws'.")
-        elif provider == "minio" and not endpoint:
-            print(f"⚠️  Warning: No --s3-endpoint specified while using 'minio' provider.")
 
 
     warn_if_s3_endpoint_suspicious(s3_endpoint, s3_provider)

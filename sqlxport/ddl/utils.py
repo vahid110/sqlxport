@@ -1,13 +1,24 @@
 # sqlxport/ddl/utils.py
 
 import pyarrow.parquet as pq
+
 import os
 
-def generate_athena_ddl(local_parquet_path, s3_prefix, table_name="my_table", partition_cols=None):
-    table = pq.ParquetFile(local_parquet_path).read()
+def find_first_parquet(path):
+    if os.path.isfile(path) and path.endswith(".parquet"):
+        return path
+    for root, _, files in os.walk(path):
+        for f in files:
+            if f.endswith(".parquet"):
+                return os.path.join(root, f)
+    raise FileNotFoundError(f"No .parquet files found under: {path}")
+
+def generate_athena_ddl(local_parquet_path, s3_prefix, table_name, partition_cols=None):
+    real_file = find_first_parquet(local_parquet_path)
+    table = pq.ParquetFile(real_file).read()
     schema = table.schema
 
-    ddl = f"CREATE EXTERNAL TABLE {table_name} (\n"
+    ddl = f"CREATE EXTERNAL TABLE IF NOT EXISTS {table_name} (\n"
     for field in schema:
         if partition_cols and field.name in partition_cols:
             continue  # skip partition columns from main schema

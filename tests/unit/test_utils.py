@@ -28,7 +28,7 @@ def test_generate_athena_ddl_basic():
         table_name="users"
     )
 
-    assert "CREATE EXTERNAL TABLE users" in ddl
+    assert "CREATE EXTERNAL TABLE IF NOT EXISTS users" in ddl
     assert "name string" in ddl.lower()
     assert "age int" in ddl.lower()
     assert "LOCATION 's3://my-bucket/my-prefix/'" in ddl
