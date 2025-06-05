@@ -53,13 +53,15 @@ def validate_options(db_url, query, output_file, output_dir, partition_by,
 @click.option('--athena-table-name', default="my_table", help='Table name for Athena DDL')
 @click.option('--generate-env-template', is_flag=True, help='Write .env.example file')
 @click.option('--verbose', is_flag=True, help='Print debug output')
+@click.option('--s3-provider', default="aws", type=click.Choice(["aws", "minio"], case_sensitive=False),
+              help='Specify the S3 provider (aws or minio). Affects default behaviors and warnings.')
 @click.pass_context
 def run(ctx, db_url, query, output_file, output_dir, partition_by, s3_bucket, s3_key, s3_endpoint,
         s3_access_key, s3_secret_key, aws_region, upload_output_dir, format,
         use_redshift_unload, iam_role, s3_output_prefix,
         list_s3_files, preview_s3_file, preview_local_file,
         generate_athena_ddl, athena_s3_prefix, athena_table_name,
-        generate_env_template, verbose):
+        generate_env_template, verbose, s3_provider):
 
     load_dotenv()
 
@@ -82,11 +84,14 @@ def run(ctx, db_url, query, output_file, output_dir, partition_by, s3_bucket, s3
         generate_athena_ddl, athena_s3_prefix, athena_table_name, format
     )
 
-    def warn_if_s3_endpoint_suspicious(endpoint):
-        if endpoint and "amazonaws.com" not in endpoint:
-            print(f"⚠️  Warning: Using custom S3 endpoint '{endpoint}'. If you're targeting AWS, this may be misconfigured.", flush=True)
+    def warn_if_s3_endpoint_suspicious(endpoint, provider):
+        if provider == "aws" and endpoint and "amazonaws.com" not in endpoint:
+            print(f"⚠️  Warning: Using custom S3 endpoint '{endpoint}' while provider is set to 'aws'.")
+        elif provider == "minio" and not endpoint:
+            print(f"⚠️  Warning: No --s3-endpoint specified while using 'minio' provider.")
 
-    warn_if_s3_endpoint_suspicious(s3_endpoint)
+
+    warn_if_s3_endpoint_suspicious(s3_endpoint, s3_provider)
 
     if generate_env_template:
         with open(".env.example", "w") as f:
