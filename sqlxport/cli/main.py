@@ -150,8 +150,12 @@ S3_OUTPUT_PREFIX=s3://data-exports/unload/
     writer = get_writer(format)
 
     if use_redshift_unload:
+        if not s3_output_prefix and s3_bucket and s3_key:
+            s3_output_prefix = f"s3://{s3_bucket.rstrip('/')}/{s3_key.lstrip('/')}"
+            print(f"[DEBUG] Reconstructed s3_output_prefix: {s3_output_prefix}")
         run_unload(db_url, query, s3_output_prefix, iam_role)
         return
+
 
     df = fetch_query_as_dataframe(db_url, query)
 
