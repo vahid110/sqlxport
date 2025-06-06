@@ -186,3 +186,5 @@ ROW_COUNT=$(jq -r '.ResultSet.Rows[1].Data[0].VarCharValue' "$RESULT_FILE")
 echo "🔍 Total row count in Glue table: $ROW_COUNT"
 
 cat glue_table.sql
+
+echo "\nRun 'jupyter notebook preview.ipynb' for a preview"

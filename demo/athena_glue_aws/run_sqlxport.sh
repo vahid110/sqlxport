@@ -141,6 +141,7 @@ for i in {1..20}; do
   echo "   → Current state: $STATE"
   if [[ "$STATE" == "SUCCEEDED" ]]; then
     echo "✅ Athena query ran successfully."
+    echo "\nRun 'jupyter notebook preview.ipynb' for a preview"
     exit 0
   elif [[ "$STATE" == "FAILED" || "$STATE" == "CANCELLED" ]]; then
     echo "❌ Athena query failed with state: $STATE"

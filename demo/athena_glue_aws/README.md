@@ -69,6 +69,12 @@ You can safely re-run the script; it cleans up local and remote state each time.
 
 - Athena query results under: s3://<your-bucket>/athena-output/
 
+## 📤 View Data:
+```bash
+jupyter notebook preview.ipynb
+```
+
+
 ## 🧭 Next Steps (To-Do)
 
 Auto-bootstrap missing partitions if MSCK fails
