@@ -116,7 +116,7 @@ setuptools==80.8.0
 six==1.17.0
 sniffio==1.3.1
 soupsieve==2.7
-sql2data==0.1.3
+sqlxport==0.1.3
 SQLAlchemy==2.0.41
 sqlxport==0.1.3
 stack-data==0.6.3

@@ -4,7 +4,7 @@ This demo shows how to export data from PostgreSQL to Amazon S3 in Parquet forma
 
 ## 🚀 Quick Start
 ```bash
-./run_sql2data.sh --bucket=<your-s3-bucket> --region=<aws-region>
+./run_sqlxport.sh --bucket=<your-s3-bucket> --region=<aws-region>
 ```
 
 ### Required Arguments
@@ -36,7 +36,7 @@ Step-by-step:
 ## 🗂 Project Structure
 ```
 demo/athena_glue_aws/
-├── run_sql2data.sh       # End-to-end script (parametrized)
+├── run_sqlxport.sh       # End-to-end script (parametrized)
 ├── docker-compose.yml    # PostgreSQL container
 ├── glue_table.sql        # Generated DDL (auto-overwritten)
 └── logs_partitioned/     # Local partitioned output (auto-removed)
