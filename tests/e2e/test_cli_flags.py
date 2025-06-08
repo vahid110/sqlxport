@@ -16,7 +16,7 @@ def test_conflicting_output_flags(cli_runner):
 def test_missing_query_error(cli_runner):
     result = cli_runner.invoke(cli, ["run", "--db-url", "sqlite://"])
     assert result.exit_code == 2
-    assert "Missing required option '--query'" in result.output
+    assert "Missing --export-mode" in result.output
 
 def test_partition_by_without_output_dir(cli_runner):
     result = cli_runner.invoke(cli, [

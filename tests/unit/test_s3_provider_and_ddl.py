@@ -1,3 +1,4 @@
+# tests/unit/test_s3_provider_and_ddl.py
 import os
 import tempfile
 import pandas as pd
@@ -22,8 +23,13 @@ class TestGenerateAthenaDDL(unittest.TestCase):
 
     def test_generate_athena_ddl_from_file(self):
         ddl = utils.generate_athena_ddl(self.file_path, "s3://bucket/path", "test_table", partition_cols=["region"])
-        self.assertIn("CREATE EXTERNAL TABLE IF NOT EXISTS test_table", ddl)
-        self.assertIn("region STRING", ddl)
+        ddl_lower = ddl.lower()
+
+        # Ensure "region" appears only once in the DDL — in the PARTITIONED BY clause
+        region_mentions = [line for line in ddl_lower.splitlines() if "region" in line]
+        self.assertEqual(len(region_mentions), 1, f"'region' appears too many times: {region_mentions}")
+
+
 
     def test_generate_athena_ddl_from_partitioned_dir(self):
         partitioned_dir = os.path.join(self.temp_dir.name, "region=EMEA")

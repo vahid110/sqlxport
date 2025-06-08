@@ -1,11 +1,10 @@
-def run_unload(db_url, query, s3_output_prefix, iam_role):
+def run_unload(db_url, query, s3_output_prefix, iam_role, file_format="parquet"):
     import psycopg
-
     from sqlxport.redshift_unload import generate_unload_statement
 
     # Clean query and generate UNLOAD SQL
     query_clean = query.strip().rstrip(';').replace('\n', ' ')
-    unload_sql = generate_unload_statement(query_clean, s3_output_prefix, iam_role, format="parquet")
+    unload_sql = generate_unload_statement(query_clean, s3_output_prefix, iam_role, format=file_format)
 
     print("📤 Executing UNLOAD:")
     print(unload_sql)

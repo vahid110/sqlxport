@@ -6,7 +6,6 @@ import pandas as pd
 import unittest
 from sqlxport.formats.csv_writer import CsvWriter
 
-
 class TestCsvWriter(unittest.TestCase):
     def setUp(self):
         self.df = pd.DataFrame({
@@ -23,12 +22,18 @@ class TestCsvWriter(unittest.TestCase):
             shutil.rmtree(self.partition_dir)
 
     def test_write_single_csv_file(self):
+        class DummyConfig:
+            def __init__(self, output_file):
+                self.output_file = output_file
+
         writer = CsvWriter()
-        writer.write(self.df, self.output_file)
+        config = DummyConfig(self.output_file)
+        writer.write(self.df, config)
         self.assertTrue(os.path.exists(self.output_file))
 
         df_read = pd.read_csv(self.output_file)
         pd.testing.assert_frame_equal(self.df, df_read)
+
 
     def test_write_partitioned_csv_files(self):
         writer = CsvWriter()
@@ -56,3 +61,15 @@ class TestCsvWriter(unittest.TestCase):
             pd.testing.assert_frame_equal(self.df, df_read)
         finally:
             shutil.rmtree(output_dir)
+
+def test_write_partitioned_empty(tmp_path):
+    writer = CsvWriter()
+    df = pd.DataFrame(columns=["id", "log_date", "msg"])
+    output_dir = tmp_path / "csv_out"
+    output_dir.mkdir()
+
+    writer.write_partitioned(df, str(output_dir), partition_by="log_date")
+
+    # The directory should be created, but there should be no partitions
+    files = list(output_dir.rglob("*.csv"))
+    assert files == []

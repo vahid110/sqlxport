@@ -29,7 +29,8 @@ dev = [
     "pytest-cov",
     "click",
     "python-dotenv",
-    "boto3"
+    "boto3",
+    "duckdb"
 ]
 
 [project.scripts]

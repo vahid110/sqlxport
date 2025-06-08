@@ -1,5 +1,4 @@
-# cli/main.py
-
+# sqlxport/cli/main.py
 import click
 import os
 import sys
@@ -7,11 +6,12 @@ import posixpath
 from dotenv import load_dotenv
 from importlib.metadata import version, PackageNotFoundError
 
-from sqlxport.core.extract import fetch_query_as_dataframe
-from sqlxport.core.storage import upload_file_to_s3, list_s3_objects, preview_s3_parquet, preview_local_parquet
-from sqlxport.redshift_unload import run_unload
-from sqlxport.formats.registry import get_writer
+from sqlxport.core.storage import upload_file_to_s3, list_s3_objects, preview_s3_parquet
 from sqlxport.ddl.utils import generate_athena_ddl as build_athena_ddl
+from sqlxport.api.export import run_export, ExportJobConfig, ExportMode
+from sqlxport.core.export_modes import validate_export_mode
+from sqlxport.query_engines import get_query_engine
+from sqlxport.core.s3_config import S3Config
 
 try:
     __version__ = version("sqlxport")
@@ -36,9 +36,8 @@ def warn_if_s3_endpoint_suspicious(endpoint, provider):
     elif provider == "minio" and not endpoint:
         print(f"⚠️  Warning: No --s3-endpoint specified while using 'minio' provider.", flush=True)
 
-
 @click.command()
-@click.option('--db-url', default=lambda: os.getenv("DB_URL"), help='PostgreSQL DB URL')
+@click.option('--db-url', default=lambda: os.getenv("DB_URL"), help='Database connection URL')
 @click.option('--query', required=False, help='SQL query to run')
 @click.option('--output-file', required=False, help='Output file path')
 @click.option('--output-dir', required=False, help='Directory to write partitioned output')
@@ -51,7 +50,7 @@ def warn_if_s3_endpoint_suspicious(endpoint, provider):
 @click.option('--aws-region', default=lambda: os.getenv("AWS_DEFAULT_REGION", "us-east-1"), help='AWS region')
 @click.option('--upload-output-dir', is_flag=True, help='Upload all partitioned files to S3')
 @click.option('--format', default="parquet", help='Output format (parquet, csv)')
-@click.option('--use-redshift-unload', is_flag=True, help='Use Redshift UNLOAD instead of SQL query')
+@click.option('--export-mode', required=False, help='Export mode: query (default), or redshift-unload')
 @click.option('--iam-role', default=lambda: os.getenv("IAM_ROLE"), help='IAM role for UNLOAD')
 @click.option('--s3-output-prefix', default=lambda: os.getenv("S3_OUTPUT_PREFIX"), help='S3 path for UNLOAD output')
 @click.option('--list-s3-files', is_flag=True, help='List S3 files')
@@ -61,18 +60,29 @@ def warn_if_s3_endpoint_suspicious(endpoint, provider):
 @click.option('--athena-s3-prefix', default=None, help='S3 prefix for Athena DDL generation')
 @click.option('--athena-table-name', default="my_table", help='Table name for Athena DDL')
 @click.option('--generate-env-template', is_flag=True, help='Write .env.example file')
+@click.option('--file-query-engine', default="duckdb", help="Engine to preview exported files (duckdb, athena, trino)")
 @click.option('--verbose', is_flag=True, help='Print debug output')
 @click.option('--s3-provider', default="aws", type=click.Choice(["aws", "minio"], case_sensitive=False),
               help='Specify the S3 provider (aws or minio). Affects default behaviors and warnings.')
+@click.option('--env-file', default=None, help='Optional .env file to load (e.g. tests/.env.test)')
 @click.pass_context
 def run(ctx, db_url, query, output_file, output_dir, partition_by, s3_bucket, s3_key, s3_endpoint,
         s3_access_key, s3_secret_key, aws_region, upload_output_dir, format,
-        use_redshift_unload, iam_role, s3_output_prefix,
+        export_mode, iam_role, s3_output_prefix,
         list_s3_files, preview_s3_file, preview_local_file,
         generate_athena_ddl, athena_s3_prefix, athena_table_name,
-        generate_env_template, verbose, s3_provider):
+        generate_env_template, file_query_engine, verbose, s3_provider, env_file):
 
-    load_dotenv()
+    # Only load .env file if explicitly requested
+    dotenv_path = os.getenv("SQLXPORT_ENV_PATH")
+    if dotenv_path:
+        print(f"🔍 Loading environment overrides from {dotenv_path}")
+        load_dotenv(dotenv_path=dotenv_path)
+    if env_file:
+        print(f"🔍 Loading environment overrides from {env_file}")
+        load_dotenv(dotenv_path=env_file)
+
+
 
     if "S3_ENDPOINT" in os.environ and not os.getenv("OVERRIDE_S3_ENDPOINT"):
         print(f"❌ Refusing to proceed: environment variable S3_ENDPOINT={os.getenv('S3_ENDPOINT')} may override AWS S3.")
@@ -82,18 +92,18 @@ def run(ctx, db_url, query, output_file, output_dir, partition_by, s3_bucket, s3
     if verbose:
         print("🔧 Effective config:")
         print(f"   Format: {format}")
+        print(f"   Export Mode: {export_mode}")
+        print(f"   File Query Engine: {file_query_engine}")
         print(f"   S3 Bucket: {s3_bucket}")
         print(f"   S3 Key: {s3_key}")
         print(f"   S3 Endpoint: {s3_endpoint}")
-        print(f"   s3_access_key: {s3_access_key}")
-        print(f"   s3_secret_key: {bool(s3_secret_key)}")
 
     validate_options(
         db_url, query, output_file, output_dir, partition_by,
         generate_athena_ddl, athena_s3_prefix, athena_table_name, format
     )
 
-
+    validate_export_mode(export_mode=export_mode, db_type=db_url)
     warn_if_s3_endpoint_suspicious(s3_endpoint, s3_provider)
 
     if generate_env_template:
@@ -112,7 +122,8 @@ S3_OUTPUT_PREFIX=s3://data-exports/unload/
         return
 
     if preview_local_file:
-        preview_local_parquet(preview_local_file)
+        engine = get_query_engine(file_query_engine)
+        print(engine.preview(preview_local_file))
         return
 
     if preview_s3_file:
@@ -140,68 +151,57 @@ S3_OUTPUT_PREFIX=s3://data-exports/unload/
             raise click.UsageError("Missing --athena-s3-prefix")
         ddl = build_athena_ddl(generate_athena_ddl, athena_s3_prefix, athena_table_name,
                                partition_cols=[partition_by] if partition_by else None)
-        # print("\n📜 Athena CREATE TABLE statement:\n")
         print(ddl)
         return
 
-    if not query and not use_redshift_unload:
+    if not query:
         raise click.UsageError("Missing required option '--query'.")
+    s3_cfg = S3Config(
+        bucket=s3_bucket,
+        key=s3_key,
+        access_key=s3_access_key,
+        secret_key=s3_secret_key,
+        endpoint_url=s3_endpoint,
+        region_name=aws_region
+    )
 
-    writer = get_writer(format)
+    config = ExportJobConfig(
+        db_url=db_url,
+        query=query,
+        output_file=output_file,
+        output_dir=output_dir,
+        format=format,
+        partition_by=[partition_by] if partition_by else None,
+        export_mode=ExportMode.UNLOAD if export_mode == "redshift-unload" else ExportMode.QUERY,
+        redshift_unload_role=iam_role,
+        s3_output_prefix=s3_output_prefix,
+        aws_profile=None,
+        s3_config=s3_cfg,
+        s3_upload=bool(s3_bucket and s3_key)
+    )
 
-    if use_redshift_unload:
-        if not s3_output_prefix and s3_bucket and s3_key:
-            s3_output_prefix = f"s3://{s3_bucket.rstrip('/')}/{s3_key.lstrip('/')}"
-            print(f"[DEBUG] Reconstructed s3_output_prefix: {s3_output_prefix}")
-        run_unload(db_url, query, s3_output_prefix, iam_role)
-        return
+    output_path = run_export(config)
 
+    if upload_output_dir and output_dir and s3_bucket and s3_key:
+        print("☁️ Uploading directory recursively to S3...")
+        for root, _, files in os.walk(output_dir):
+            for file in files:
+                full_path = os.path.join(root, file)
+                rel_path = os.path.relpath(full_path, output_dir)
+                object_key = posixpath.join(s3_key, rel_path)
+                print(f"   • {rel_path}")
+                upload_file_to_s3(
+                    file_path=full_path,
+                    bucket_name=s3_bucket,
+                    object_key=object_key,
+                    access_key=s3_access_key,
+                    secret_key=s3_secret_key,
+                    endpoint_url=s3_endpoint,
+                    region_name=aws_region
+                )
+        print("✅ Folder upload complete.")
 
-    df = fetch_query_as_dataframe(db_url, query)
-
-    if output_dir:
-        print(f"💾 Saving partitioned output to {output_dir}...")
-        if partition_by:
-            writer.write_partitioned(df, output_dir, partition_by)
-        else:
-            writer.write_flat(df, output_dir)
-
-        if s3_bucket and s3_key:
-            print("☁️ Uploading directory recursively to S3...")
-            for root, _, files in os.walk(output_dir):
-                for file in files:
-                    full_path = os.path.join(root, file)
-                    rel_path = os.path.relpath(full_path, output_dir)
-                    object_key = posixpath.join(s3_key, rel_path)  # 🚨 fix here
-                    print(f"   • {rel_path}")
-                    upload_file_to_s3(
-                        file_path=full_path,
-                        bucket_name=s3_bucket,
-                        object_key=object_key,
-                        access_key=s3_access_key,
-                        secret_key=s3_secret_key,
-                        endpoint_url=s3_endpoint,
-                        region_name=aws_region
-                    )
-            print("✅ Folder upload complete.")
-    elif output_file:
-        print(f"💾 Saving to {output_file}...")
-        writer.write(df, output_file)
-        if s3_bucket and s3_key and s3_access_key and s3_secret_key:
-            print(f"☁️ Uploading to S3... {s3_bucket}")
-            upload_file_to_s3(
-                file_path=output_file,
-                bucket_name=s3_bucket,
-                object_key=s3_key,
-                access_key=s3_access_key,
-                secret_key=s3_secret_key,
-                endpoint_url=s3_endpoint,
-                region_name=aws_region
-            )
-    else:
-        raise click.UsageError("Provide either --output-file or --output-dir.")
-
-    print("✅ Done.")
+    print(f"✅ Export complete. Output: {output_path}")
 
 @click.group(invoke_without_command=True)
 @click.version_option(__version__, "--version", "-v", message="%(version)s")
@@ -216,7 +216,53 @@ def cli(ctx):
 def help(ctx):
     click.echo(run.get_help(ctx))
 
+@cli.command("generate-ddl")
+@click.option('--input-file', required=True, help='Path to input file (Parquet/CSV)')
+@click.option('--output-format', default="athena", help='Target DDL dialect (e.g., athena)')
+@click.option('--file-query-engine', default="duckdb", help='Engine to use for schema inference (duckdb, athena, etc.)')
+@click.option('--partition-by', default=None, help='Comma-separated partition columns')
+def generate_ddl(input_file, output_format, file_query_engine, partition_by):
+    from sqlxport.query_engines import get_query_engine
+
+    engine = get_query_engine(file_query_engine)
+    schema_df = engine.infer_schema(input_file)
+
+    if output_format != "athena":
+        raise click.UsageError(f"DDL format '{output_format}' is not supported yet.")
+
+    partition_cols = [col.strip() for col in partition_by.split(",")] if partition_by else None
+
+    from sqlxport.ddl.utils import generate_athena_ddl
+    ddl = generate_athena_ddl(input_file, input_file, "my_table", partition_cols, schema_df=schema_df)
+    print(ddl)
+
+@cli.command("validate-table")
+@click.option('--table-name', required=True, help='Fully qualified table name')
+@click.option('--file-query-engine', default="duckdb", help='Engine to use for validation')
+@click.option('--athena-output-location', required=False, help="Athena query result location")
+def validate_table(table_name, file_query_engine, athena_output_location):
+    from sqlxport.query_engines import get_query_engine
+
+    engine = get_query_engine(file_query_engine)
+
+    kwargs = {}
+    if file_query_engine == "athena":
+        kwargs["output_location"] = athena_output_location
+
+    engine.validate_table(table_name, **kwargs)
+
+def export(**kwargs) -> str:
+    """
+    Lightweight alternative to run_export for quick use in notebooks or scripts.
+
+    Accepts all fields from ExportJobConfig as keyword arguments.
+    """
+    config = ExportJobConfig(**kwargs)
+    return run_export(config)
+
 cli.add_command(run)
+cli.add_command(generate_ddl)
+cli.add_command(validate_table) 
 
 if __name__ == "__main__":
     cli()

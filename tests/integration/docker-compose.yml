@@ -1,0 +1,14 @@
+version: "3.8"
+services:
+  test-postgres:
+    image: postgres:14
+    container_name: sqlxport_test_pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpass
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./initdb:/docker-entrypoint-initdb.d

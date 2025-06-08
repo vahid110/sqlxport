@@ -1,41 +1,36 @@
-# sqlxport/ddl/utils.py
-
-import pyarrow.parquet as pq
-
-import os
-
 import pyarrow.parquet as pq
 import os
 
 def find_first_parquet(path):
-    #print(f"[DEBUG] Looking for .parquet files under: {path}")
     if os.path.isfile(path) and path.endswith(".parquet"):
-        #print(f"[DEBUG] Found single parquet file: {path}")
         return path
     for root, _, files in os.walk(path):
         for f in files:
             if f.endswith(".parquet"):
-                found = os.path.join(root, f)
-                #print(f"[DEBUG] Found parquet file: {found}")
-                return found
+                return os.path.join(root, f)
     raise FileNotFoundError(f"No .parquet files found under: {path}")
 
-def generate_athena_ddl(local_parquet_path, s3_prefix, table_name, partition_cols=None):
-    real_file = find_first_parquet(local_parquet_path)
-    #print(f"[DEBUG] Using Parquet file: {real_file}")
-
-    schema = pq.read_schema(real_file)
-    #print(f"[DEBUG] Full schema fields:")
-    # for field in schema:
-    #     print(f"  - {field.name}: {field.type}")
+def generate_athena_ddl(local_parquet_path, s3_prefix, table_name, partition_cols=None, schema_df=None):
+    if schema_df is None:
+        real_file = find_first_parquet(local_parquet_path)
+        schema = pq.read_schema(real_file)
+        fields = schema
+        use_custom_schema = False
+    else:
+        use_custom_schema = True
+        fields = schema_df  # list of dicts: [{name:..., type:...}, ...]
 
     ddl = f"CREATE EXTERNAL TABLE IF NOT EXISTS {table_name} (\n"
-    for field in schema:
-        if partition_cols and field.name in partition_cols:
-            #print(f"[DEBUG] Skipping partition column from main schema: {field.name}")
+    for field in fields:
+        name = field.name if not use_custom_schema else field["name"]
+        typ = field.type if not use_custom_schema else field["type"]
+
+        if partition_cols and name in partition_cols:
             continue
-        athena_type = arrow_to_athena_type(field.type)
-        ddl += f"  {field.name} {athena_type},\n"
+
+        athena_type = arrow_to_athena_type(typ)
+        ddl += f"  {name} {athena_type},\n"
+
     ddl = ddl.rstrip(",\n") + "\n)\n"
 
     if partition_cols:
@@ -47,15 +42,26 @@ def generate_athena_ddl(local_parquet_path, s3_prefix, table_name, partition_col
     ddl += "STORED AS PARQUET\n"
     ddl += f"LOCATION '{s3_prefix}';\n"
 
-    #print(f"[DEBUG] Generated DDL:\n" + ddl)
     return ddl
-
-
-
 
 def arrow_to_athena_type(arrow_type):
     import pyarrow as pa
 
+    if isinstance(arrow_type, str):
+        t = arrow_type.lower()
+        if "int" in t:
+            return "BIGINT"
+        if "float" in t:
+            return "DOUBLE"
+        if "string" in t or "utf8" in t:
+            return "STRING"
+        if "bool" in t:
+            return "BOOLEAN"
+        if "timestamp" in t:
+            return "TIMESTAMP"
+        return "STRING"
+
+    # Original logic for pyarrow schema types
     if pa.types.is_string(arrow_type):
         return "STRING"
     if pa.types.is_boolean(arrow_type):
@@ -86,7 +92,6 @@ def arrow_to_athena_type(arrow_type):
         )
         return f"STRUCT<{fields}>"
     if pa.types.is_map(arrow_type):
-        return f"MAP<STRING, STRING>"  # Simplified, can be improved
+        return f"MAP<STRING, STRING>"
 
-    return "STRING"  # Fallback
-
+    return "STRING"

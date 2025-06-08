@@ -1,6 +1,6 @@
 [![PyPI version](https://badge.fury.io/py/sqlxport.svg)](https://pypi.org/project/sqlxport/)
-
 ![CI](https://github.com/vahid110/sqlxport/actions/workflows/ci.yml/badge.svg)
+[![Code Style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 <p align="center">
   <img src=".github/logo.png" alt="SQLxport Logo" width="200"/>
@@ -8,32 +8,33 @@
 
 # sqlxport
 
-**Modular CLI tool to extract data from PostgreSQL/Redshift and export to various formats (e.g. Parquet, CSV), with optional S3 upload and Athena integration.**
+**Modular CLI + API tool to extract data from PostgreSQL, Redshift, SQLite (and more), exporting to formats like Parquet/CSV, with optional S3 upload and Athena integration.**
 
 ---
 
 ## ✅ Features
 
-* 🔄 Run custom SQL queries against PostgreSQL or Redshift
+* 🔄 Run custom SQL queries against PostgreSQL, Redshift, SQLite
 * 📦 Export to Parquet or CSV (`--format`)
 * 🩣 Upload results to S3 or MinIO
-* 🔄 Redshift `UNLOAD` support
+* 🔄 Redshift `UNLOAD` support (`--export-mode redshift-unload`)
 * 🧹 Partition output by column
 * 📜 Generate Athena `CREATE TABLE` DDL
 * 🔍 Preview local or remote Parquet/CSV files
 * ⚙️ `.env` support for convenient config
+* 🐍 Reusable Python API
 
 ---
 
 ## ❓ Why SQLxport?
-* SQLxport was created to eliminate repetitive data export workflows.
-* Unlike raw scripts or limited GUI tools:
+
+SQLxport simplifies data export workflows and is designed for automation:
+
 * ✅ One command gives you SQL → Parquet/CSV → S3
 * 🧱 Works locally, in CI, or inside Docker
-* 🪢 Connects easily to Athena, MinIO, Redshift
-* 🔌 Clean format layer allows future plugins
-
-It’s open, scriptable, and designed for engineers who automate.
+* 🪢 Connects to Athena, MinIO, Redshift easily
+* 🔌 Clean format and database plugin model
+* 🧪 Fully tested, scriptable, production-ready
 
 ---
 
@@ -41,7 +42,7 @@ It’s open, scriptable, and designed for engineers who automate.
 
 ```bash
 pip install .
-# or editable install
+# or for development
 pip install -e .
 ```
 
@@ -49,20 +50,34 @@ pip install -e .
 
 ## 🚀 Usage
 
-### Basic
+### Choose Export Mode
+
+| `--export-mode`        | Compatible DB URLs               | Description              |
+|------------------------|----------------------------------|--------------------------|
+| `postgres-query`       | `postgresql://`, `postgres://`   | SELECT + local export   |
+| `redshift-unload`      | `redshift://`                    | UNLOAD to S3             |
+| `sqlite-query`         | `sqlite:///path.db`              | For local/lightweight testing |
+
+---
+
+### CLI Examples
+
+#### Basic Export
 
 ```bash
 sqlxport run \
+  --export-mode postgres-query \
   --db-url postgresql://user:pass@localhost:5432/mydb \
   --query "SELECT * FROM users" \
   --output-file users.parquet \
   --format parquet
 ```
 
-### With S3 Upload
+#### S3 Upload
 
 ```bash
 sqlxport run \
+  --export-mode postgres-query \
   --db-url postgresql://... \
   --query "..." \
   --output-file users.parquet \
@@ -73,22 +88,24 @@ sqlxport run \
   --s3-endpoint https://s3.amazonaws.com
 ```
 
-### Partitioned Export
+#### Partitioned Export
 
 ```bash
 sqlxport run \
+  --export-mode postgres-query \
   --db-url postgresql://... \
   --query "..." \
   --output-dir output/ \
-  --partition-by group_column
+  --partition-by group_column \
+  --format csv
 ```
 
-### Redshift UNLOAD Mode
+#### Redshift UNLOAD Mode
 
 ```bash
 sqlxport run \
-  --use-redshift-unload \
-  --db-url redshift+psycopg2://... \
+  --export-mode redshift-unload \
+  --db-url redshift://... \
   --query "SELECT * FROM large_table" \
   --s3-output-prefix s3://bucket/unload/ \
   --iam-role arn:aws:iam::123456789012:role/MyUnloadRole
@@ -96,17 +113,37 @@ sqlxport run \
 
 ---
 
-## 🧪 Running Tests
+## 🐍 Python API
 
-```bash
-pytest -v
+```python
+from sqlxport.api.export import run_export, ExportJobConfig
+
+config = ExportJobConfig(
+    db_url="sqlite:///test.db",
+    query="SELECT * FROM users",
+    format="csv",
+    output_file="out.csv",
+    export_mode="sqlite-query"
+)
+
+run_export(config)
 ```
 
 ---
 
-## 🧪 Environment Variables
+## 🧪 Running Tests
 
-You can set options via `.env` or environment:
+```bash
+pytest tests/unit/
+pytest tests/integration/
+pytest tests/e2e/
+```
+
+---
+
+## 🔧 Environment Variables
+
+Supports `.env` or exported shell variables:
 
 ```env
 DB_URL=postgresql://username:password@localhost:5432/mydb
@@ -128,25 +165,25 @@ sqlxport run --generate-env-template
 
 ## 🛠 Roadmap
 
-* ✅ Modular format support
-* ✅ CSV support
+* ✅ Modular export modes
+* ✅ CSV and partitioned output
 * ⏳ Add `jsonl`, `xlsx` formats
-* ⏳ Plugin system for custom writers/loaders
-* ⏳ SaaS mode or server-side export platform
-* ⏳ Stream output to Kafka/Kinesis
+* ⏳ Plugin system for writers/loaders
+* ⏳ SaaS mode / UI platform
+* ⏳ Kafka/Kinesis streaming support
 
 ---
 
 ## 🔐 Security
 
-* Don't commit `.env` files
-* Store credentials securely (e.g. `.aws/credentials`, vaults)
+* Don’t commit `.env` files
+* Use credential vaults when possible
 
 ---
 
 ## 👨‍💼 Author
 
-Vahid Saber
+Vahid Saber  
 Built with ❤️ for data engineers and developers.
 
 ---
