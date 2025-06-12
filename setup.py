@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="sqlxport",
-    version="0.1.3",
+    version="0.2.0",
     author="Vahid Saber",
     author_email="vahid.saber78@gmail.com",
     description="Export SQL query results to Parquet, CSV, and more. Upload to S3 or MinIO.",

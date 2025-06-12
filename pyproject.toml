@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sqlxport"
-version = "0.1.3"
+version = "0.2.0"
 description = "Export SQL query results to Parquet and CSV... and upload to S3 or MinIO"
 authors = [
     { name = "Vahid Saber" }
