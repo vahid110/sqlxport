@@ -1,10 +1,15 @@
 # tests/unit/test_s3_provider_and_ddl.py
+
 import os
+import sys
 import tempfile
 import pandas as pd
 import unittest
+from io import StringIO
+
 from sqlxport.ddl import utils
-from sqlxport.cli.main import warn_if_s3_endpoint_suspicious
+from sqlxport.cli.utils import warn_if_s3_endpoint_suspicious
+
 
 class TestGenerateAthenaDDL(unittest.TestCase):
 
@@ -29,8 +34,6 @@ class TestGenerateAthenaDDL(unittest.TestCase):
         region_mentions = [line for line in ddl_lower.splitlines() if "region" in line]
         self.assertEqual(len(region_mentions), 1, f"'region' appears too many times: {region_mentions}")
 
-
-
     def test_generate_athena_ddl_from_partitioned_dir(self):
         partitioned_dir = os.path.join(self.temp_dir.name, "region=EMEA")
         os.makedirs(partitioned_dir)
@@ -45,24 +48,21 @@ class TestGenerateAthenaDDL(unittest.TestCase):
 class TestS3ProviderWarning(unittest.TestCase):
 
     def test_warn_if_s3_endpoint_suspicious_custom(self):
-        from io import StringIO
-        import sys
-
         captured_output = StringIO()
         sys.stdout = captured_output
-        warn_if_s3_endpoint_suspicious("", "minio")
-        sys.stdout = sys.__stdout__
+        try:
+            warn_if_s3_endpoint_suspicious("", "minio")
+        finally:
+            sys.stdout = sys.__stdout__
 
         self.assertIn("Warning: No --s3-endpoint specified while using 'minio'", captured_output.getvalue())
 
-
     def test_warn_if_s3_endpoint_suspicious_amazon(self):
-        from io import StringIO
-        import sys
-
         captured_output = StringIO()
         sys.stdout = captured_output
-        warn_if_s3_endpoint_suspicious("https://s3.amazonaws.com", "aws")
-        sys.stdout = sys.__stdout__
+        try:
+            warn_if_s3_endpoint_suspicious("https://s3.amazonaws.com", "aws")
+        finally:
+            sys.stdout = sys.__stdout__
 
         self.assertNotIn("Warning", captured_output.getvalue())

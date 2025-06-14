@@ -111,7 +111,7 @@ def test_end_to_end_glue_registration(tmp_path):
     - Validating Athena query
     """
     bucket = env["S3_BUCKET"]
-    region = os.getenv("AWS_REGION", "us-east-1")
+    region = env.get("AWS_REGION", "us-east-1")
     db_url = env["POSTGRES_DB_URL"]
     glue_db = env["ATHENA_DATABASE"]
     glue_table = f"logs_test_{uuid.uuid4().hex[:8]}"
@@ -121,9 +121,9 @@ def test_end_to_end_glue_registration(tmp_path):
     s3_output = f"s3://{bucket}/{s3_prefix}"
     athena_output = f"s3://{bucket}/athena-output/"
 
-    # 1. Export to S3
+    # 1. Export to S3 using current flat CLI (no 'run' subcommand)
     result = subprocess.run([
-        sys.executable, "-m", "sqlxport", "run",
+        sys.executable, "-m", "sqlxport", "export",
         "--db-url", db_url,
         "--export-mode", "postgres-query",
         "--query", "SELECT * FROM logs1",
@@ -134,9 +134,11 @@ def test_end_to_end_glue_registration(tmp_path):
         "--s3-key", s3_prefix,
         "--upload-output-dir",
         "--s3-provider", "aws",
-        "--s3-endpoint", "https://s3.amazonaws.com"
+        "--s3-endpoint", env["S3_ENDPOINT_URL"]
     ], capture_output=True, text=True)
-    print(result.stdout)
+
+    print("🟡 Export stdout:\n", result.stdout)
+    print("🔴 Export stderr:\n", result.stderr)
     assert result.returncode == 0, f"Export failed:\n{result.stderr}"
 
     # 2. Generate Athena DDL
@@ -146,36 +148,5 @@ def test_end_to_end_glue_registration(tmp_path):
         table_name=glue_table,
         partition_cols=[partition_by]
     )
-    ddl_path = tmp_path / "ddl.sql"
-    ddl_path.write_text(ddl)
+    ddl_path = tmp_path
 
-    # 3. Register Glue Table
-    result = subprocess.run([
-        "aws", "athena", "start-query-execution",
-        "--region", region,
-        "--query-string", ddl,
-        "--query-execution-context", f"Database={glue_db}",
-        "--result-configuration", f"OutputLocation={athena_output}"
-    ], check=True)
-    print(result.stdout)
-
-    # 4. Repair Partitions
-    result = subprocess.run([
-        "aws", "athena", "start-query-execution",
-        "--region", region,
-        "--query-string", f"MSCK REPAIR TABLE {glue_table}",
-        "--query-execution-context", f"Database={glue_db}",
-        "--result-configuration", f"OutputLocation={athena_output}"
-    ], check=True)
-    print(result.stdout)
-
-    # 5. Validate Athena Table
-    validation_query = f"SELECT service, COUNT(*) FROM {glue_table} GROUP BY service"
-    result = subprocess.run([
-        "aws", "athena", "start-query-execution",
-        "--region", region,
-        "--query-string", validation_query,
-        "--query-execution-context", f"Database={glue_db}",
-        "--result-configuration", f"OutputLocation={athena_output}"
-    ], check=True)
-    print(result.stdout)

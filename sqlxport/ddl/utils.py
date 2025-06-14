@@ -1,3 +1,5 @@
+# sqlxport/ddl/utils.py
+
 import pyarrow.parquet as pq
 import os
 
