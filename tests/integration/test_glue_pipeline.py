@@ -43,12 +43,15 @@ def test_postgres_to_athena_pipeline(tmp_path):
     unique_key = f"test-glue-pipeline/{uuid.uuid4()}/"
     output_dir = "tests/output_partitioned"
 
+    from sqlxport.api.export import ExportMode
+
     config = ExportJobConfig(
         db_url=env["POSTGRES_DB_URL"],
         query="SELECT * FROM logs1",
         output_dir=output_dir,
         format="parquet",
         partition_by=["service"],
+        export_mode=ExportMode("postgres-query"),  # required
         s3_config=S3Config(
             bucket=env["S3_BUCKET"],
             key=unique_key,

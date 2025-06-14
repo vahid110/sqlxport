@@ -4,7 +4,7 @@ import pytest
 from click.testing import CliRunner
 from sqlalchemy import create_engine, text
 from sqlxport.cli.main import cli
-from sqlxport.api.export import ExportJobConfig, run_export
+from sqlxport.api.export import ExportJobConfig, ExportMode, run_export
 
 def create_sample_sqlite_db():
     engine = create_engine("sqlite:///test.db")
@@ -96,11 +96,12 @@ def test_matrix_config_from_env(tmp_path, monkeypatch):
     config = ExportJobConfig(
         query="SELECT * FROM dummy",
         db_url="sqlite://",
-        export_mode="sqlite-query",
+        export_mode=ExportMode("sqlite-query"),  # cast string to enum
         format=format,
         output_dir=output_path,
-        partition_by="group" if partitioned else None,
+        partition_by=["group"] if partitioned else None,
     )
+
 
     run_export(config, fetch_override=lambda *_: df)
     if partitioned:

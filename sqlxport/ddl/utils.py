@@ -1,3 +1,5 @@
+# sqlxport/ddl/utils.py
+
 import pyarrow.parquet as pq
 import os
 
@@ -11,38 +13,58 @@ def find_first_parquet(path):
     raise FileNotFoundError(f"No .parquet files found under: {path}")
 
 def generate_athena_ddl(local_parquet_path, s3_prefix, table_name, partition_cols=None, schema_df=None):
+    import pyarrow.parquet as pq
+
     if schema_df is None:
         real_file = find_first_parquet(local_parquet_path)
         schema = pq.read_schema(real_file)
-        fields = schema
-        use_custom_schema = False
+        fields = [{"name": f.name, "type": f.type} for f in schema]
+        print(f"📦 Inferred schema from {real_file}:")
+        for f in fields:
+            print(f"  - {f['name']}: {f['type']}")
     else:
-        use_custom_schema = True
         fields = schema_df  # list of dicts: [{name:..., type:...}, ...]
 
-    ddl = f"CREATE EXTERNAL TABLE IF NOT EXISTS {table_name} (\n"
+    # Validate partition columns exist in schema
+    if partition_cols:
+        parquet_field_names = {f["name"] for f in fields}
+        missing = set(partition_cols) - parquet_field_names
+        if missing:
+            raise ValueError(f"❌ Partition columns not found in schema: {missing}")
+
+    # Split fields into partition and non-partition columns
+    partition_schema = []
+    main_schema = []
+
     for field in fields:
-        name = field.name if not use_custom_schema else field["name"]
-        typ = field.type if not use_custom_schema else field["type"]
+        name = field["name"]
+        typ = field["type"]
+        athena_type = arrow_to_athena_type(typ)
 
         if partition_cols and name in partition_cols:
-            continue
+            partition_schema.append((name, athena_type))
+        else:
+            main_schema.append((name, athena_type))
 
-        athena_type = arrow_to_athena_type(typ)
+    # Start building DDL
+    ddl = f"CREATE EXTERNAL TABLE IF NOT EXISTS {table_name} (\n"
+    for name, athena_type in main_schema:
         ddl += f"  {name} {athena_type},\n"
-
     ddl = ddl.rstrip(",\n") + "\n)\n"
 
-    if partition_cols:
+    # Add partitioned columns if present
+    if partition_schema:
         ddl += "PARTITIONED BY (\n"
-        for col in partition_cols:
-            ddl += f"  {col} STRING,\n"
+        for name, athena_type in partition_schema:
+            ddl += f"  {name} {athena_type},\n"
         ddl = ddl.rstrip(",\n") + "\n)\n"
 
     ddl += "STORED AS PARQUET\n"
     ddl += f"LOCATION '{s3_prefix}';\n"
 
+    print("📄 Generated Athena DDL:\n", ddl)
     return ddl
+
 
 def arrow_to_athena_type(arrow_type):
     import pyarrow as pa

@@ -6,17 +6,36 @@ import os
 import pyarrow.parquet as pq
 import posixpath 
 
-def upload_dir_to_s3(dir_path: str, bucket_name: str, key_prefix: str, s3_client=None):
-    if s3_client is None:
-        s3_client = boto3.client("s3")
+def upload_dir_to_s3(
+    dir_path,
+    bucket_name,
+    key_prefix,
+    access_key,
+    secret_key,
+    endpoint_url="http://localhost:9000",
+    region_name="us-east-1"
+):
+    import os
+    import boto3
+
+    s3 = boto3.client(
+        's3',
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
+        endpoint_url=endpoint_url,
+        region_name=region_name
+    )
 
     for root, _, files in os.walk(dir_path):
-        for filename in files:
-            full_path = os.path.join(root, filename)
-            relative_path = os.path.relpath(full_path, start=dir_path)
-            s3_key = os.path.join(key_prefix, relative_path).replace("\\", "/")  # S3 requires forward slashes
-            print(f"📤 Uploading {full_path} to s3://{bucket_name}/{s3_key}")
-            s3_client.upload_file(full_path, bucket_name, s3_key)
+        for file in files:
+            full_path = os.path.join(root, file)
+            relative_path = os.path.relpath(full_path, dir_path)
+            s3_key = os.path.join(key_prefix, relative_path).replace("\\", "/")
+
+            # print(f"📤 Uploading {full_path} to s3://{bucket_name}/{s3_key}")
+            s3.upload_file(full_path, bucket_name, s3_key)
+    print(f"✅ Directory uploaded to s3://{bucket_name}/{key_prefix}")
+
 
 def upload_file_to_s3(
     file_path,

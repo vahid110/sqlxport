@@ -41,6 +41,7 @@ def test_run_export_parquet_file(sample_sqlite_db):
         query="SELECT * FROM sample_table",
         output_file=output_file,
         format="parquet",
+        export_mode="sqlite-query"
     )
 
     path = run_export(config)
@@ -55,7 +56,8 @@ def test_run_export_partitioned(sample_sqlite_db):
             query="SELECT * FROM sample_table",
             output_dir=tmpdir,
             format="parquet",
-            partition_by=["category"]
+            partition_by=["category"],
+            export_mode="sqlite-query"
         )
 
         path = run_export(config)
@@ -67,13 +69,13 @@ def test_run_export_partitioned(sample_sqlite_db):
         )
         assert found, f"No .parquet file found in {path}"
 
-
 def test_run_export_parquet(tmp_path):
     config = ExportJobConfig(
         db_url="sqlite://",
         query="SELECT 42 AS answer",
         output_file=str(tmp_path / "test.parquet"),
-        format="parquet"
+        format="parquet",
+        export_mode="sqlite-query"
     )
     out = run_export(config)
     assert out.endswith(".parquet")
