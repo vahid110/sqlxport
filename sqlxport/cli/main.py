@@ -12,6 +12,7 @@ from sqlxport.api.export import run_export, ExportJobConfig, ExportMode
 from sqlxport.core.export_modes import validate_export_mode
 from sqlxport.query_engines import get_query_engine
 from sqlxport.core.s3_config import S3Config
+from sqlxport.cli.glue_ops import register_table_in_glue, repair_partitions_in_glue, validate_glue_table
 
 try:
     __version__ = version("sqlxport")
@@ -65,13 +66,23 @@ def warn_if_s3_endpoint_suspicious(endpoint, provider):
 @click.option('--s3-provider', default="aws", type=click.Choice(["aws", "minio"], case_sensitive=False),
               help='Specify the S3 provider (aws or minio). Affects default behaviors and warnings.')
 @click.option('--env-file', default=None, help='Optional .env file to load (e.g. tests/.env.test)')
+@click.option("--glue-register", is_flag=True, help="Register table in Glue via Athena")
+@click.option("--repair-partitions", is_flag=True, help="Run MSCK REPAIR TABLE after registration")
+@click.option("--validate-table", is_flag=True, help="Run validation query after repair")
+@click.option("--athena-output", default=None, help="S3 location where Athena query results are written (e.g., s3://bucket/query-results/)")
+@click.option(
+    "--athena-database",
+    help="Glue/Athena database name to register and validate the table in (required if using --glue-register, --repair-partitions, or --validate-table)."
+)
+
 @click.pass_context
 def run(ctx, db_url, query, output_file, output_dir, partition_by, s3_bucket, s3_key, s3_endpoint,
         s3_access_key, s3_secret_key, aws_region, upload_output_dir, format,
         export_mode, iam_role, s3_output_prefix,
         list_s3_files, preview_s3_file, preview_local_file,
         generate_athena_ddl, athena_s3_prefix, athena_table_name,
-        generate_env_template, file_query_engine, verbose, s3_provider, env_file):
+        generate_env_template, file_query_engine, verbose, s3_provider, env_file,
+        athena_database, glue_register, repair_partitions, validate_table, athena_output):
 
     # Only load .env file if explicitly requested
     dotenv_path = os.getenv("SQLXPORT_ENV_PATH")
@@ -81,8 +92,6 @@ def run(ctx, db_url, query, output_file, output_dir, partition_by, s3_bucket, s3
     if env_file:
         print(f"🔍 Loading environment overrides from {env_file}")
         load_dotenv(dotenv_path=env_file)
-
-
 
     if "S3_ENDPOINT" in os.environ and not os.getenv("OVERRIDE_S3_ENDPOINT"):
         print(f"❌ Refusing to proceed: environment variable S3_ENDPOINT={os.getenv('S3_ENDPOINT')} may override AWS S3.")
@@ -154,8 +163,15 @@ S3_OUTPUT_PREFIX=s3://data-exports/unload/
         print(ddl)
         return
 
+
     if not query:
         raise click.UsageError("Missing required option '--query'.")
+    
+    
+    if glue_register or repair_partitions or validate_table:
+        if not athena_table_name:
+            raise click.ClickException("--athena-table-name is required for Glue-related operations")
+    
     s3_cfg = S3Config(
         bucket=s3_bucket,
         key=s3_key,
@@ -182,6 +198,44 @@ S3_OUTPUT_PREFIX=s3://data-exports/unload/
 
     output_path = run_export(config)
 
+    # Glue + Athena integration post-processing
+    if any([glue_register, repair_partitions, validate_table]) and not athena_database:
+        raise click.UsageError(
+            "Missing required option --athena-database. "
+            "It is needed when using --glue-register, --repair-partitions, or --validate-table."
+        )
+
+    if glue_register:
+        if not athena_output:
+            raise click.ClickException("--athena-output is required for --glue-register")
+        register_table_in_glue(
+            region=aws_region,
+            ddl_path="glue_table.sql",
+            database=athena_database,
+            output=athena_output
+        )
+
+    if repair_partitions:
+        if not athena_output:
+            raise click.ClickException("--athena-output is required for --repair-partitions")
+        repair_partitions_in_glue(
+            region=aws_region,
+            table=athena_table_name,
+            database=athena_database,
+            output=athena_output
+        )
+
+    if validate_table:
+        if not athena_output:
+            raise click.ClickException("--athena-output is required for --validate-table")
+        validate_glue_table(
+            region=aws_region,
+            table=athena_table_name,
+            database=athena_database,
+            output=athena_output
+        )
+
+
     if upload_output_dir and output_dir and s3_bucket and s3_key:
         print("☁️ Uploading directory recursively to S3...")
         for root, _, files in os.walk(output_dir):
@@ -200,7 +254,6 @@ S3_OUTPUT_PREFIX=s3://data-exports/unload/
                     region_name=aws_region
                 )
         print("✅ Folder upload complete.")
-
     print(f"✅ Export complete. Output: {output_path}")
 
 @click.group(invoke_without_command=True)

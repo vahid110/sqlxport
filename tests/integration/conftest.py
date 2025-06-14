@@ -2,6 +2,7 @@ import subprocess
 import pytest
 import os
 import time
+from sqlxport.utils.env import load_env_file
 
 DOCKER_COMPOSE_FILE = os.path.join(os.path.dirname(__file__), "docker-compose.yml")
 SERVICE_NAME = "sqlxport_test_pg"  # Matches docker-compose.yml container_name

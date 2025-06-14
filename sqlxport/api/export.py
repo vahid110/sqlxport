@@ -1,13 +1,14 @@
 # sqlxport/api/export.py
 
 import click
+import os
 from dataclasses import dataclass
 from typing import Optional, List
 from enum import Enum
 
 from sqlxport.core.extract import fetch_query_as_dataframe
 from sqlxport.formats.registry import get_writer
-from sqlxport.core.storage import upload_file_to_s3
+from sqlxport.core.storage import upload_file_to_s3, upload_dir_to_s3
 from sqlxport.redshift_unload import run_unload
 from sqlxport.core.s3_config import S3Config
 
@@ -33,6 +34,8 @@ class ExportJobConfig:
     aws_profile: Optional[str] = None
     s3_config: Optional[S3Config] = None
     s3_upload: bool = False
+    athena_database: Optional[str] = None
+
 
 
 def _validate_partition_column(df, partition_cols):
@@ -87,14 +90,17 @@ def run_export(config: ExportJobConfig, fetch_override=None):
 
     # ✅ Optional S3 upload
     if config.s3_upload:
-        upload_file_to_s3(
-            file_path=output_path,
-            bucket_name=config.s3_config.bucket,
-            object_key=config.s3_config.key,
-            access_key=config.s3_config.access_key,
-            secret_key=config.s3_config.secret_key,
-            endpoint_url=config.s3_config.endpoint_url,
-            region_name=config.s3_config.region_name
-        )
+        if os.path.isdir(output_path):
+            upload_dir_to_s3(
+                dir_path=output_path,
+                bucket_name=config.s3_config.bucket,
+                key_prefix=config.s3_config.key,
+            )
+        else:
+            upload_file_to_s3(
+                file_path=output_path,
+                bucket_name=config.s3_config.bucket,
+                object_key=config.s3_config.key,
+            )
 
     return output_path

@@ -44,7 +44,9 @@ def test_redshift_unload_via_export_mode():
     print(f"✅ Integration test passed: {len(contents)} files at {s3_prefix}")
 
 @pytest.mark.skipif("POSTGRES_DB_URL" not in env, reason="No Postgres config in .env.test")
-def test_postgres_query_export_mode(tmp_path):
+def test_postgres_query_export_mode(tmp_path, monkeypatch):
+    monkeypatch.setattr("sqlxport.api.export.upload_file_to_s3", lambda *a, **kw: None)
+
     db_url = env["POSTGRES_DB_URL"]
     output_file = tmp_path / "out.parquet"
 
@@ -58,7 +60,8 @@ def test_postgres_query_export_mode(tmp_path):
     assert output_file.exists()
 
 @pytest.mark.skipif("SQLITE_DB_URL" not in env, reason="No SQLite config in .env.test")
-def test_sqlite_query_export_mode(tmp_path):
+def test_sqlite_query_export_mode(tmp_path, monkeypatch):
+    monkeypatch.setattr("sqlxport.api.export.upload_file_to_s3", lambda *_a, **_kw: None)
     db_url = env["SQLITE_DB_URL"]
     output_file = tmp_path / "out.parquet"
 

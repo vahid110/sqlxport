@@ -6,6 +6,18 @@ import os
 import pyarrow.parquet as pq
 import posixpath 
 
+def upload_dir_to_s3(dir_path: str, bucket_name: str, key_prefix: str, s3_client=None):
+    if s3_client is None:
+        s3_client = boto3.client("s3")
+
+    for root, _, files in os.walk(dir_path):
+        for filename in files:
+            full_path = os.path.join(root, filename)
+            relative_path = os.path.relpath(full_path, start=dir_path)
+            s3_key = os.path.join(key_prefix, relative_path).replace("\\", "/")  # S3 requires forward slashes
+            print(f"📤 Uploading {full_path} to s3://{bucket_name}/{s3_key}")
+            s3_client.upload_file(full_path, bucket_name, s3_key)
+
 def upload_file_to_s3(
     file_path,
     bucket_name,

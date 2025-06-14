@@ -12,14 +12,20 @@ def create_sample_sqlite_db():
         conn.execute(text("CREATE TABLE IF NOT EXISTS users (id INTEGER, name TEXT)"))
         conn.execute(text("INSERT INTO users (id, name) VALUES (1, 'Alice'), (2, 'Bob')"))
 
-def test_cli_output_file(tmp_path):
+def test_cli_output_file(tmp_path, monkeypatch):
+    monkeypatch.setattr("sqlxport.api.export.upload_file_to_s3", lambda *a, **kw: None)
+
+    monkeypatch.setattr("sqlxport.api.export.fetch_query_as_dataframe", lambda *_: pd.DataFrame({
+        "id": [1],
+        "name": ["Alice"]
+    }))
+
     runner = CliRunner()
-    create_sample_sqlite_db()
     output_file = tmp_path / "out.parquet"
 
     result = runner.invoke(cli, [
         "run",
-        "--query", "SELECT * FROM users",
+        "--query", "SELECT id, name FROM users",
         "--output-file", str(output_file),
         "--format", "parquet",
         "--export-mode", "sqlite-query",
@@ -54,14 +60,20 @@ def test_preview_local_file_invalid_path():
     assert result.exception is not None
     assert "no files found" in str(result.exception).lower()
 
-def test_cli_output_csv_file(tmp_path):
+def test_cli_output_csv_file(tmp_path, monkeypatch):
+    monkeypatch.setattr("sqlxport.api.export.upload_file_to_s3", lambda *a, **kw: None)
+
+    monkeypatch.setattr("sqlxport.api.export.fetch_query_as_dataframe", lambda *_: pd.DataFrame({
+        "id": [1],
+        "name": ["Bob"]
+    }))
+
     runner = CliRunner()
-    create_sample_sqlite_db()
     output_file = tmp_path / "out.csv"
 
     result = runner.invoke(cli, [
         "run",
-        "--query", "SELECT * FROM users",
+        "--query", "SELECT id, name FROM users",
         "--output-file", str(output_file),
         "--format", "csv",
         "--export-mode", "sqlite-query",
@@ -122,6 +134,7 @@ def test_cli_partitioned_csv_empty_result(tmp_path, monkeypatch):
     assert not list(output_dir.rglob("*.csv"))
 
 def test_cli_output_csv_non_partitioned(tmp_path, monkeypatch):
+    monkeypatch.setattr("sqlxport.api.export.upload_file_to_s3", lambda *a, **kw: None)
     monkeypatch.setattr("sqlxport.api.export.fetch_query_as_dataframe", lambda *_: pd.DataFrame({"id": [1], "name": ["test"]}))
     
     from sqlxport.cli.main import cli  # ✅ Import after patch
