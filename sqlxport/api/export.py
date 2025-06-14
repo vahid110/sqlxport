@@ -16,19 +16,21 @@ from sqlxport.core.s3_config import S3Config
 
 
 class ExportMode(str, Enum):
-    QUERY = "query"
-    UNLOAD = "unload"
-
+    SQLITE_QUERY = "sqlite-query"
+    POSTGRES_QUERY = "postgres-query"
+    MYSQL_QUERY = "mysql-query"
+    REDSHIFT_UNLOAD = "redshift-unload"
 
 @dataclass
 class ExportJobConfig:
     db_url: str
     query: str
+    export_mode: ExportMode
+
     output_file: Optional[str] = None
     output_dir: Optional[str] = None
     format: str = "parquet"
     partition_by: Optional[List[str]] = None
-    export_mode: ExportMode = ExportMode.QUERY
     redshift_unload_role: Optional[str] = None
     s3_output_prefix: Optional[str] = None
     aws_profile: Optional[str] = None
@@ -45,7 +47,6 @@ def _validate_partition_column(df, partition_cols):
     if df[partition_cols].isnull().any().any():
         raise ValueError("Partition column(s) contain null values")
 
-
 def run_export(config: ExportJobConfig, fetch_override=None):
     # ✅ General validation for required CLI arguments
     if not config.export_mode:
@@ -57,8 +58,10 @@ def run_export(config: ExportJobConfig, fetch_override=None):
     if not (config.output_file or config.output_dir or config.s3_output_prefix):
         raise click.UsageError("Missing output location. Provide --output-file, --output-dir, or --s3-output-prefix.")
 
+    export_mode = config.export_mode.lower()
+
     # ✅ UNLOAD-based export
-    if config.export_mode == ExportMode.UNLOAD:
+    if export_mode == "redshift-unload":
         if not config.redshift_unload_role:
             raise click.UsageError("Redshift UNLOAD requires --redshift-unload-role (IAM role).")
         if not config.s3_output_prefix:
@@ -104,3 +107,4 @@ def run_export(config: ExportJobConfig, fetch_override=None):
             )
 
     return output_path
+
