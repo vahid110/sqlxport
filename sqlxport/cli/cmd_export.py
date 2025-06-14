@@ -35,7 +35,8 @@ from sqlxport.cli.utils import load_env_if_needed, echo_effective_config, valida
 def export(db_url, query, output_file, output_dir, partition_by, format, export_mode,
            iam_role, s3_output_prefix, s3_bucket, s3_key, s3_endpoint, s3_access_key,
            s3_secret_key, aws_region, upload_output_dir, s3_provider, verbose, env_file):
-
+    print(f"query is {query}")
+    
     load_env_if_needed(env_file)
     warn_if_s3_endpoint_suspicious(s3_endpoint, s3_provider)
 

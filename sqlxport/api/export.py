@@ -98,13 +98,21 @@ def run_export(config: ExportJobConfig, fetch_override=None):
                 dir_path=output_path,
                 bucket_name=config.s3_config.bucket,
                 key_prefix=config.s3_config.key,
+                access_key=config.s3_config.access_key,
+                secret_key=config.s3_config.secret_key,
+                endpoint_url=config.s3_config.endpoint_url,
             )
+
         else:
             upload_file_to_s3(
                 file_path=output_path,
                 bucket_name=config.s3_config.bucket,
                 object_key=config.s3_config.key,
+                access_key=config.s3_config.access_key,
+                secret_key=config.s3_config.secret_key,
+                endpoint_url=config.s3_config.endpoint_url,
             )
+
 
     return output_path
 
