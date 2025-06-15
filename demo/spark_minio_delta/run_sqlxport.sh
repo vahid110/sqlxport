@@ -19,7 +19,7 @@ docker compose exec demo-db psql -U postgres -d demo -c "CREATE TABLE IF NOT EXI
 docker compose exec demo-db psql -U postgres -d demo -c "INSERT INTO sales (region, amount) SELECT * FROM (VALUES ('EMEA', 100), ('NA', 200), ('APAC', 150)) AS tmp(region, amount) ON CONFLICT DO NOTHING;"
 
 echo -e "\n📦 [3/6] Exporting sales table to Parquet with sqlxport..."
-sqlxport run \
+sqlxport export \
   --db-url "postgresql://postgres:password@localhost:5432/demo" \
   --query "SELECT * FROM sales" \
   --format parquet \

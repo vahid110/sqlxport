@@ -12,7 +12,7 @@ S3_PREFIX="logs/"
 mkdir -p ddl
 
 echo -e "\n📜 Generating Athena DDL for table: $TABLE_NAME..."
-sqlxport run \
+sqlxport export \
   --generate-athena-ddl "$OUTPUT_DIR" \
   --athena-s3-prefix "$S3_PREFIX" \
   --athena-table-name "$TABLE_NAME" \

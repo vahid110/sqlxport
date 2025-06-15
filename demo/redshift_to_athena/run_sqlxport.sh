@@ -85,7 +85,7 @@ aws s3 rm "$ATHENA_OUTPUT" --recursive --quiet || true
 
 # [ 3 / 8 ] Export using Redshift UNLOAD
 echo "[ 3 / 8 ] Exporting with Redshift UNLOAD to $S3_OUTPUT..."
-sqlxport run \
+sqlxport export \
   --db-url "$REDSHIFT_DB_URL" \
   --iam-role "$REDSHIFT_IAM_ROLE" \
   --query "SELECT * FROM logs" \
@@ -103,7 +103,7 @@ aws s3 cp --recursive "$S3_OUTPUT" tmp_unload/ \
 
 # [ 5 / 8 ] Generate Glue-compatible DDL
 echo "[ 5 / 8 ] Generating Glue-compatible DDL..."
-sqlxport run \
+sqlxport export \
   --generate-athena-ddl "tmp_unload" \
   --athena-s3-prefix "$S3_OUTPUT" \
   --athena-table-name "$GLUE_TABLE" \

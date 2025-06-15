@@ -29,7 +29,7 @@ This demo showcases how to export data from a PostgreSQL database to different f
 ## 🛠️ Developer Notes
 - `run_pipeline.sh` orchestrates extraction, saving, and previewing.
 - `run_full_pipeline.sh` additionally triggers Spark Delta Lake transformation.
-- Internally uses `sqlxport run` CLI (`write_flat` or `write_partitioned`).
+- Internally uses `sqlxport export` CLI (`write_flat` or `write_partitioned`).
 - S3 uploads done via Dockerized `mc` tool.
 
 ### 🔄 Internal Pipeline Stages
@@ -115,7 +115,7 @@ This demo showcases how to export data from a PostgreSQL database to different f
 ---
 
 ## 🛠️ Internal Notes (for developers)
-- Output is saved using `sqlxport run` CLI.
+- Output is saved using `sqlxport export` CLI.
 - Uses `write_flat` or `write_partitioned` internally depending on arguments.
 - Phase 2 processing (Spark) is optional and kicked off via `--use-spark`.
 - S3 upload handled via MinIO CLI (`mc`) in Docker.

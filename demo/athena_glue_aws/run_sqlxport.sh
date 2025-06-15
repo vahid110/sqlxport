@@ -42,7 +42,7 @@ rm -rf "$LOCAL_OUTPUT_DIR"
 aws s3 rm "$S3_OUTPUT" --recursive --quiet --region "$REGION"
 
 echo "[ 2 / 8 ] Exporting logs to S3 in partitioned format..."
-sqlxport run \
+sqlxport export \
   --db-url "$DB_URL" \
   --query "SELECT * FROM logs" \
   --output-dir "$LOCAL_OUTPUT_DIR" \
@@ -55,7 +55,7 @@ sqlxport run \
   --upload-output-dir
 
 echo "[ 3 / 8 ] Generating Glue-compatible DDL..."
-sqlxport run \
+sqlxport export \
   --generate-athena-ddl "$LOCAL_OUTPUT_DIR" \
   --output-dir "$LOCAL_OUTPUT_DIR" \
   --athena-s3-prefix "$S3_OUTPUT" \
