@@ -1,4 +1,4 @@
-# 🚀 sqlxport Bulk Demo: PostgreSQL ➡️ Parquet ➡️ Delta Lake via Spark + MinIO
+# 🚀 sqlxport Demo: PostgreSQL ➡️ Parquet ➡️ Delta Lake via Spark + MinIO
 
 This demo showcases a full data pipeline using `sqlxport`, converting PostgreSQL data into Parquet, storing it on MinIO, and transforming it into Delta Lake format via Spark.
 
@@ -8,7 +8,7 @@ This demo showcases a full data pipeline using `sqlxport`, converting PostgreSQL
 
 - **PostgreSQL** – Seeded with 3 million `sales` records.
 - **MinIO** – S3-compatible storage for staging Parquet files.
-- **sqlxport** – Exports data to partitioned or flat Parquet.
+- **sqlxport** – Exports data to flat or partitioned Parquet format.
 - **Apache Spark + Delta Lake** – Converts Parquet to Delta Lake format.
 
 ---
@@ -29,78 +29,52 @@ docker volume rm demo_minio-data spark_delta_pgdata
 
 ## ▶️ Run the Demo
 
-The demo supports **multiple execution modes**. Here’s what each option does:
+Use the unified script to run all scenarios in order:
+
+```bash
+./run_sqlxport.sh
+```
+
+This script will automatically:
+
+### ① Flat Export (Default)
+- Export Parquet to: `sales_delta.parquet`
+- Upload to MinIO: `sales_delta/sales_delta.parquet`
+- Spark reads and writes Delta to: `delta_output/` (unpartitioned)
+
+### ② Bulk Export: `--partitioned`
+- Export partitioned Parquet to: `sales_delta/`
+- Spark reads and writes partitioned Delta by `region` to: `sales_delta/`
+
+### ③ Bulk Export: `--output-dir sales_partitioned_delta`
+- Export non-partitioned Parquet to: `sales_partitioned_delta.parquet`
+- Spark writes flat Delta to: `sales_partitioned_delta/`
+
+### ④ Bulk Export: `--partitioned --output-dir sales_partitioned_delta`
+- Export partitioned Parquet to: `sales_partitioned_delta/`
+- Spark writes partitioned Delta to: `sales_partitioned_delta/`
+
+Each step runs sequentially, cleaning and verifying outputs.
 
 ---
 
-### ✅ `./run_sqlxport.sh`
+## 🔍 Previewing Results
 
-- Uses flat mode (no partitioning)
-- Exports Parquet to: `sales_delta.parquet`
-- Uploads to MinIO at: `sales_delta/sales_delta.parquet`
-- Spark reads it and writes unpartitioned Delta to: `delta_output/`
-
----
-
-### ✅ `./run_sqlxport_bulk.sh`
-
-#### 🔹 No options
-
-- Uses default values:
-  - Partitioned: ❌
-  - Output dir: `sales_delta`
-- Effectively behaves like `./run_sqlxport.sh` (flat mode)
-
----
-
-### ✅ `./run_sqlxport_bulk.sh --partitioned`
-
-- Enables partitioning by `region`
-- Output dir defaults to: `sales_delta/`
-- Output structure:
-  ```
-  sales_delta/
-    └── data/
-        ├── region=EMEA/
-        ├── region=NA/
-        └── region=APAC/
-  ```
-- Spark reads partitioned Parquet and writes Delta partitioned by `region`
-
----
-
-### ✅ `./run_sqlxport_bulk.sh --output-dir sales_partitioned_delta`
-
-- Uses flat mode (no `--partitioned` specified)
-- Exports single Parquet file to: `sales_partitioned_delta.parquet`
-- Spark reads and writes non-partitioned Delta to: `delta_output/`
-
----
-
-### ✅ `./run_sqlxport_bulk.sh --partitioned --output-dir sales_partitioned_delta`
-
-- **Recommended** for bulk mode testing
-- Enables region partitioning
-- Output dir is explicitly `sales_partitioned_delta/`
-- Produces a partitioned Parquet directory and corresponding partitioned Delta table
-
----
-
-## 🔍 Previewing the Result
-
-Use DuckDB to preview partitioned output recursively:
+Use DuckDB to preview partitioned or flat Parquet outputs:
 
 ```bash
 duckdb -c "SELECT COUNT(*) FROM 'sales_partitioned_delta/**/*.parquet';"
+duckdb -c "SELECT * FROM 'delta_output/*.parquet' LIMIT 10;"
 ```
 
-> Note: DuckDB doesn’t support Delta metadata, so we preview raw Parquet files.
+> Note: DuckDB cannot read Delta metadata. Use it to preview raw `.parquet` files only.
 
 ---
 
 ## 📂 Files Involved
 
-- `run_sqlxport_bulk.sh` – Orchestrates both flat and partitioned bulk pipelines.
-- `run_sqlxport.sh` – Simpler flat-mode demo.
-- `run_spark_query.py` – Runs inside Spark container to convert Parquet ➝ Delta.
-- `docker-compose.yml` – Sets up PostgreSQL, MinIO, and Spark.
+- `run_sqlxport.sh` – Main demo script. Runs all 4 export scenarios (flat & bulk).
+- `run_spark_query.py` – Spark job to convert Parquet ➝ Delta.
+- `run_spark_in_docker.sh` – Launches Spark container with query.
+- `verify_outputs.sh` – Verifies Delta output content.
+- `docker-compose.yml` – Starts PostgreSQL, MinIO, and Spark.
