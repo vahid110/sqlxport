@@ -34,7 +34,6 @@ pip install pyspark
 ### Step 1: Start Services and Run Full Pipeline
 
 ```bash
-chmod +x run_sqlxport.sh
 ./run_sqlxport.sh
 ```
 
@@ -70,7 +69,7 @@ duckdb -c "SELECT * FROM glob('delta_output/region=*/**/*.parquet') LIMIT 10;"
 duckdb -c "SELECT * FROM glob('csv_output/*.csv') LIMIT 5;"
 ```
 
-### Preview via Jupyter
+### Preview via Jupyter (experimental – ensure Delta JAR is on Spark classpath)
 
 ```bash
 jupyter notebook preview.ipynb
@@ -113,6 +112,18 @@ docker stop <container_id>
 ```
 
 Then re-run the demo.
+
+---
+
+### Delta SparkSessionExtension Not Found?
+
+If you see:
+
+```
+ClassNotFoundException: io.delta.sql.DeltaSparkSessionExtension
+```
+
+Make sure your Spark session includes the Delta Lake JARs. This is not yet supported in the default Jupyter Python kernel.
 
 ---
 

@@ -18,7 +18,7 @@ from sqlxport.cli.utils import load_env_if_needed, echo_effective_config, valida
 @click.option('--output-dir', required=False, help='Directory to write partitioned output')
 @click.option('--partition-by', required=False, help='Column to partition output by')
 @click.option('--format', default="parquet", help='Output format (parquet, csv)')
-@click.option('--export-mode', default="query", show_default=True, help='Export mode: query (default), or redshift-unload')
+@click.option('--export-mode', default=None, show_default=False, help='Export mode (auto-inferred if omitted): postgres-query, redshift-unload, etc.')
 @click.option('--iam-role', default=lambda: os.getenv("IAM_ROLE"), help='IAM role for UNLOAD')
 @click.option('--s3-output-prefix', default=lambda: os.getenv("S3_OUTPUT_PREFIX"), help='S3 path for UNLOAD output')
 @click.option('--s3-bucket', default=lambda: os.getenv("S3_BUCKET"), help='S3 bucket')

@@ -39,7 +39,6 @@ class ExportJobConfig:
     athena_database: Optional[str] = None
 
 
-
 def _validate_partition_column(df, partition_cols):
     missing = [col for col in partition_cols if col not in df.columns]
     if missing:
@@ -47,10 +46,22 @@ def _validate_partition_column(df, partition_cols):
     if df[partition_cols].isnull().any().any():
         raise ValueError("Partition column(s) contain null values")
 
+def infer_export_mode(db_url: str) -> str:
+    """Infer export mode from DB URL if not explicitly provided."""
+    if db_url.startswith("postgresql://"):
+        return "postgres-query"
+    elif db_url.startswith("redshift://"):
+        return "redshift-unload"
+    raise click.UsageError(
+        "❌ Could not infer --export-mode from DB URL. Please specify it explicitly with --export-mode."
+    )
+
 def run_export(config: ExportJobConfig, fetch_override=None):
-    # ✅ General validation for required CLI arguments
+    # ✅ Infer export mode if missing
     if not config.export_mode:
-        raise click.UsageError("Missing --export-mode")
+        config.export_mode = infer_export_mode(config.db_url)
+
+    # ✅ General validation
     if not config.query:
         raise click.UsageError("Missing --query")
     if not config.format:
@@ -60,12 +71,12 @@ def run_export(config: ExportJobConfig, fetch_override=None):
 
     export_mode = config.export_mode.lower()
 
-    # ✅ UNLOAD-based export
+    # ✅ Redshift UNLOAD
     if export_mode == "redshift-unload":
         if not config.redshift_unload_role:
-            raise click.UsageError("Redshift UNLOAD requires --redshift-unload-role (IAM role).")
+            raise click.UsageError("Redshift UNLOAD requires --redshift-unload-role.")
         if not config.s3_output_prefix:
-            raise click.UsageError("Redshift UNLOAD requires --s3-output-prefix")
+            raise click.UsageError("Redshift UNLOAD requires --s3-output-prefix.")
 
         run_unload(
             db_url=config.db_url,
@@ -76,7 +87,7 @@ def run_export(config: ExportJobConfig, fetch_override=None):
         )
         return config.s3_output_prefix
 
-    # ✅ QUERY-based export
+    # ✅ Query-based export
     fetch = fetch_override or fetch_query_as_dataframe
     df = fetch(config.db_url, config.query)
 
@@ -102,7 +113,6 @@ def run_export(config: ExportJobConfig, fetch_override=None):
                 secret_key=config.s3_config.secret_key,
                 endpoint_url=config.s3_config.endpoint_url,
             )
-
         else:
             upload_file_to_s3(
                 file_path=output_path,
@@ -113,6 +123,4 @@ def run_export(config: ExportJobConfig, fetch_override=None):
                 endpoint_url=config.s3_config.endpoint_url,
             )
 
-
     return output_path
-
