@@ -6,9 +6,11 @@ import pytest
 import boto3
 from urllib.parse import urlparse
 from click.testing import CliRunner
-from sqlxport.cli.main import run
+
+from sqlxport.cli.main import cli
 from sqlxport.utils.env import load_env_file
 
+# Load test environment
 os.environ["SQLXPORT_ENV_PATH"] = "tests/.env.test"
 env = load_env_file("tests/.env.test")
 
@@ -18,7 +20,8 @@ def test_redshift_unload_via_export_mode():
     iam_role = env["REDSHIFT_IAM_ROLE"]
     s3_prefix = f's3://{env["S3_BUCKET"]}/test-export-mode-unload/{uuid.uuid4()}'
 
-    result = CliRunner().invoke(run, [
+    result = CliRunner().invoke(cli, [
+        "export",
         "--export-mode", "redshift-unload",
         "--db-url", db_url,
         "--query", "SELECT 1 AS test_col",
@@ -28,7 +31,6 @@ def test_redshift_unload_via_export_mode():
 
     assert result.exit_code == 0, f"Run failed: {result.output}"
 
-    # ✅ Check that a Parquet file was uploaded
     parsed = urlparse(s3_prefix)
     s3 = boto3.client(
         "s3",
@@ -50,26 +52,31 @@ def test_postgres_query_export_mode(tmp_path, monkeypatch):
     db_url = env["POSTGRES_DB_URL"]
     output_file = tmp_path / "out.parquet"
 
-    result = CliRunner().invoke(run, [
+    result = CliRunner().invoke(cli, [
+        "export",
         "--export-mode", "postgres-query",
         "--db-url", db_url,
         "--query", "SELECT 123 AS val",
         "--output-file", str(output_file)
     ])
+
     assert result.exit_code == 0, f"Postgres export failed: {result.output}"
     assert output_file.exists()
 
 @pytest.mark.skipif("SQLITE_DB_URL" not in env, reason="No SQLite config in .env.test")
 def test_sqlite_query_export_mode(tmp_path, monkeypatch):
     monkeypatch.setattr("sqlxport.api.export.upload_file_to_s3", lambda *_a, **_kw: None)
+
     db_url = env["SQLITE_DB_URL"]
     output_file = tmp_path / "out.parquet"
 
-    result = CliRunner().invoke(run, [
+    result = CliRunner().invoke(cli, [
+        "export",
         "--export-mode", "sqlite-query",
         "--db-url", db_url,
         "--query", "SELECT 'abc' AS val",
         "--output-file", str(output_file)
     ])
+
     assert result.exit_code == 0, f"SQLite export failed: {result.output}"
     assert output_file.exists()

@@ -39,3 +39,7 @@ sqlxport = "sqlxport.cli.main:cli"
 [tool.setuptools.packages.find]
 where = ["."]
 
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::DeprecationWarning:botocore.*"
+]

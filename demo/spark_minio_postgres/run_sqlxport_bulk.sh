@@ -48,12 +48,13 @@ echo "📤 Exporting sales table to Parquet in MinIO with sqlxport..."
 
 if [[ $PARTITIONED -eq 1 ]]; then
   echo "📦 Exporting in partitioned mode by region..."
-  sqlxport run \
+  sqlxport export \
     --db-url postgresql://postgres:postgres@localhost:5432/demo \
     --query "SELECT * FROM sales" \
     --output-dir "$OUTPUT_DIR" \
     --format parquet \
     --partition-by region \
+    --export-mode postgres-query \
     --s3-bucket demo-bucket \
     --s3-key "$OUTPUT_DIR/" \
     --s3-endpoint http://localhost:9000 \
@@ -62,11 +63,12 @@ if [[ $PARTITIONED -eq 1 ]]; then
     --aws-region us-east-1
 else
   echo "📦 Exporting in flat (non-partitioned) mode..."
-  sqlxport run \
+  sqlxport export \
     --db-url postgresql://postgres:postgres@localhost:5432/demo \
     --query "SELECT * FROM sales" \
     --output-file "$OUTPUT_DIR.parquet" \
     --format parquet \
+    --export-mode postgres-query \
     --s3-bucket demo-bucket \
     --s3-key "$OUTPUT_DIR/$OUTPUT_DIR.parquet" \
     --s3-endpoint http://localhost:9000 \

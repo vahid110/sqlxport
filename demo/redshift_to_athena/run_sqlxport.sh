@@ -1,11 +1,37 @@
 #!/bin/bash
 set -e
 
+# Parse CLI args
+for arg in "$@"; do
+  case $arg in
+    --bucket=*)
+      S3_BUCKET="${arg#*=}"
+      shift
+      ;;
+    --region=*)
+      S3_REGION="${arg#*=}"
+      shift
+      ;;
+    *)
+      echo "❌ Unknown argument: $arg"
+      echo "Usage: $0 --bucket=your-bucket-name --region=aws-region"
+      exit 1
+      ;;
+  esac
+done
+
+if [[ -z "$S3_BUCKET" || -z "$S3_REGION" ]]; then
+  echo "❌ Missing --bucket or --region argument"
+  echo "Usage: $0 --bucket=your-bucket-name --region=aws-region"
+  exit 1
+fi
+
+
 # Accept arguments or default fallback
-: "${REDSHIFT_DB_URL:="postgresql://USER:PWD@CLUSTER.redshift.amazonaws.com:5439/dev"}"
-: "${REDSHIFT_IAM_ROLE:="arn:aws:iam::12345678:role/your_redshift_and_s3_access_role"}"
-: "${S3_BUCKET:=$1}"
-: "${S3_REGION:=$2}"
+: "${REDSHIFT_DB_URL:="postgresql://awsuser:Testing1234@vahidsbr-redshift-cluster.cxzokcavspmr.us-east-1.redshift.amazonaws.com:5439/dev"}"
+: "${REDSHIFT_IAM_ROLE:="arn:aws:iam::198814315080:role/redshift_s3"}"
+# : "${S3_BUCKET:=$1}"
+# : "${S3_REGION:=$2}"
 : "${GLUE_DB:=analytics_demo}"
 : "${GLUE_TABLE:=logs_unload}"
 : "${S3_OUTPUT_PREFIX:=redshift-unload-demo/logs/}"
@@ -85,13 +111,12 @@ aws s3 rm "$ATHENA_OUTPUT" --recursive --quiet || true
 
 # [ 3 / 8 ] Export using Redshift UNLOAD
 echo "[ 3 / 8 ] Exporting with Redshift UNLOAD to $S3_OUTPUT..."
-sqlxport run \
+sqlxport export \
   --db-url "$REDSHIFT_DB_URL" \
   --iam-role "$REDSHIFT_IAM_ROLE" \
   --query "SELECT * FROM logs" \
-  --use-redshift-unload \
-  --s3-bucket "$S3_BUCKET" \
-  --s3-key "$S3_OUTPUT_PREFIX" \
+  --export-mode redshift-unload \
+  --s3-output-prefix "$S3_OUTPUT" \
   --s3-provider aws \
   --s3-endpoint "https://s3.$S3_REGION.amazonaws.com"
 
@@ -103,11 +128,16 @@ aws s3 cp --recursive "$S3_OUTPUT" tmp_unload/ \
 
 # [ 5 / 8 ] Generate Glue-compatible DDL
 echo "[ 5 / 8 ] Generating Glue-compatible DDL..."
-sqlxport run \
-  --generate-athena-ddl "tmp_unload" \
-  --athena-s3-prefix "$S3_OUTPUT" \
-  --athena-table-name "$GLUE_TABLE" \
+SAMPLE_FILE=$(find tmp_unload/ -name "*.parquet" | head -n 1)
+
+sqlxport generate-ddl \
+  --input-file "$SAMPLE_FILE" \
+  --table-name "$GLUE_TABLE" \
+  --partition-by "" \
+  --s3-url "$S3_OUTPUT" \
   > glue_table.sql
+  
+cat glue_table.sql
 
 # [ 6 / 8 ] Register table in Glue Catalog via Athena
 echo "[ 6 / 8 ] Registering table in Glue Catalog..."
@@ -184,7 +214,5 @@ aws athena get-query-results \
 
 ROW_COUNT=$(jq -r '.ResultSet.Rows[1].Data[0].VarCharValue' "$RESULT_FILE")
 echo "🔍 Total row count in Glue table: $ROW_COUNT"
-
-cat glue_table.sql
 
 echo "\nRun 'jupyter notebook preview.ipynb' for a preview"

@@ -22,10 +22,11 @@ docker exec demo-db-spark-delta psql -U postgres -d demo -c "INSERT INTO sales (
 
 # Export data to Parquet
 echo "📤 Exporting sales table to Parquet with sqlxport..."
-sqlxport run \
+sqlxport export \
   --db-url postgresql://postgres:postgres@localhost:5432/demo \
   --query "SELECT * FROM sales" \
   --format parquet \
+  --export-mode postgres-query \
   --output-file sales.parquet
 
 # Run Spark job to convert to Delta and query

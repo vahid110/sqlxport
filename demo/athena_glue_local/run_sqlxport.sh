@@ -17,7 +17,7 @@ docker compose exec postgres psql -U postgres -d demo -c "CREATE TABLE IF NOT EX
 docker compose exec postgres psql -U postgres -d demo -c "INSERT INTO logs (service, ts) SELECT 'web', now() - i * interval '1 hour' FROM generate_series(1, 10) i;"
 
 echo -e "\n🔹 [4/7] Exporting logs table to Parquet with partitioning..."
-sqlxport run \
+sqlxport export \
   --db-url "postgresql://postgres:password@localhost:5433/demo" \
   --query "SELECT * FROM logs" \
   --format parquet \

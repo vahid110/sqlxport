@@ -42,7 +42,7 @@ mkdir -p "$OUTPUT_DIR"
 echo "📤 Exporting from DB to local $FORMAT..."
 if [[ "$PARTITIONED" -eq 1 ]]; then
   echo "📌 Saving partitioned output to $OUTPUT_DIR..."
-  sqlxport run \
+  sqlxport export \
     --db-url "$DB_URL" \
     --query "$QUERY" \
     --output-dir "$OUTPUT_DIR" \
@@ -50,7 +50,7 @@ if [[ "$PARTITIONED" -eq 1 ]]; then
     --partition-by region
 else
   echo "📌 Saving flat output to $OUTPUT_DIR..."
-  sqlxport run \
+  sqlxport export \
     --db-url "$DB_URL" \
     --query "$QUERY" \
     --output-dir "$OUTPUT_DIR" \

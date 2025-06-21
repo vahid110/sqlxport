@@ -1,106 +1,61 @@
-# sqlxport Local Demo (Self-Run, Free – Hybrid Edition)
+# 🧪 sqlxport Local Demo (Self-Run, Hybrid Edition)
 
-This demo lets you extract data from PostgreSQL, export to Parquet (basic or partitioned) or CSV using `sqlxport`, upload to MinIO (S3-compatible), and query or preview it locally using CLI, DuckDB, or Jupyter.
+This demo showcases a local data pipeline using `sqlxport`, PostgreSQL, and MinIO to export data into Parquet or CSV, preview it locally using DuckDB or CLI, and clean up afterward. All services run locally using Docker.
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Requirements
+### 1. Prerequisites
 
 - Docker & Docker Compose
-- `sqlxport` CLI installed and in your `$PATH`
+- `sqlxport` installed and in `$PATH`
 - AWS CLI (`brew install awscli`)
-- (Optional) DuckDB or Jupyter for previewing output
+- Optional: DuckDB and Jupyter Notebook
 
 ---
 
-### 2. Start Services
+### 2. Run the Full Pipeline
+
+Use the consolidated script:
 
 ```bash
-docker-compose up -d
+./run_sqlxport.sh
 ```
 
-Wait 10 seconds for PostgreSQL and MinIO to start.
+This will:
+
+1. 🧱 Start PostgreSQL and MinIO via Docker.
+2. 🪣 Create `demo-bucket` in MinIO if missing.
+3. 📦 Export `sales` table to:
+   - Basic Parquet: `sales.parquet` → `basic-parquet/sales.parquet`
+   - CSV: `sales.csv` → `csv/sales.csv`
+   - Partitioned Parquet: `output_partitioned/region=...` → `partitioned-parquet/`
+4. 🔍 Preview local results with DuckDB or CLI.
+5. 🧼 Tear down containers and clean local outputs.
 
 ---
 
-## 🔧 Export Options
+## 🔍 Optional Preview Methods
 
-### ✅ 1. Basic Parquet Export
+### ✅ DuckDB
 
-```bash
-./run_basic_parquet.sh
-```
+- Basic:
+  ```bash
+  duckdb -c "SELECT region, SUM(amount) FROM 'sales.parquet' GROUP BY region;"
+  ```
 
-- Saves to `sales.parquet`
-- Uploads to `demo-bucket/sales.parquet`
-- Shows preview using `--preview-local-file`
+- Partitioned:
+  ```bash
+  duckdb -c "SELECT region, COUNT(*) FROM read_parquet('output_partitioned/*/*.parquet') GROUP BY region;"
+  ```
 
----
+- CSV:
+  ```bash
+  duckdb -c "SELECT * FROM 'sales.csv' LIMIT 10;"
+  ```
 
-### ✅ 2. Partitioned Parquet Export
-
-```bash
-./run_partitioned_parquet.sh
-```
-
-- Saves partitioned Parquet files to `output_partitioned/region=...`
-- Uploads all to MinIO
-
----
-
-### ✅ 3. CSV Export
-
-```bash
-./run_csv.sh
-```
-
-- Saves a flat `sales.csv`
-- Previews it using `head`
-
----
-
-## 🔍 Preview Output (Optional)
-
-### ✅ Use DuckDB to query the Parquet file:
-
-#### ✅ Basic Parquet
-
-```bash
-duckdb
-SELECT * FROM 'sales.parquet' LIMIT 10;
-```
-
-Or run predefined query:
-```bash
-duckdb -c "SELECT region, SUM(amount) FROM 'sales.parquet' GROUP BY region"
-```
-
-#### ✅ Partitioned Parquet
-DuckDB can read partitioned files using read_parquet():
-```bash
-duckdb -c "SELECT * FROM read_parquet('output_partitioned/*/*.parquet') LIMIT 10"
-```
-Or to aggregate:
-
-```bash
-duckdb -c "SELECT region, SUM(amount) FROM read_parquet('output_partitioned/*/*.parquet') GROUP BY region"
-```
-
-#### ✅ CSV File
-```bash
-duckdb
-SELECT * FROM 'sales.csv' LIMIT 10;
-```
-Or run:
-
-```bash
-duckdb -c "SELECT * FROM 'sales.csv'"
-```
----
-
-### ✅ Use Jupyter Notebook (Recommended for Analysts)
+### ✅ Jupyter
 
 ```bash
 jupyter notebook preview.ipynb
@@ -108,15 +63,21 @@ jupyter notebook preview.ipynb
 
 ---
 
-### ✅ Use MinIO Console
+### ✅ MinIO Console
 
-Access MinIO web UI at:  
-[http://localhost:9001](http://localhost:9001)  
-Login: `minioadmin` / `minioadmin`
+Access: [http://localhost:9001](http://localhost:9001)  
+Credentials: `minioadmin / minioadmin`
 
 ---
 
-## ✅ Cleanup
+## 🧹 Cleanup
+
+The script automatically stops containers and removes:
+
+- Local files: `sales.parquet`, `sales.csv`, `output_partitioned/`
+- Containers: PostgreSQL, MinIO
+
+You can also run:
 
 ```bash
 docker-compose down -v
@@ -126,8 +87,6 @@ docker-compose down -v
 
 ## 🧠 Notes
 
-- PostgreSQL comes pre-seeded with a `sales` table.
-- All services run locally, no cloud required.
-- You can swap in Redshift or Athena later with minimal changes.
-
-Enjoy!
+- PostgreSQL is pre-seeded with a `sales` table.
+- `sqlxport` uploads all results to MinIO using S3-compatible API.
+- No external cloud access is required.

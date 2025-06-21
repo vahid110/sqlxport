@@ -26,6 +26,18 @@ if [[ -z "$BUCKET" || -z "$REGION" ]]; then
   exit 1
 fi
 
+# Auto-detect correct bucket region
+DETECTED_REGION=$(aws s3api get-bucket-location --bucket "$BUCKET" --output text)
+if [[ "$DETECTED_REGION" == "None" ]]; then
+  DETECTED_REGION="us-east-1"
+fi
+if [[ "$REGION" != "$DETECTED_REGION" ]]; then
+  echo "⚠️  WARNING: You passed --region=$REGION, but actual bucket region is $DETECTED_REGION. Using $DETECTED_REGION instead."
+  REGION="$DETECTED_REGION"
+fi
+
+S3_ENDPOINT="https://s3.${REGION}.amazonaws.com"
+
 DB_URL="postgresql://user:pass@localhost:5432/demo"
 GLUE_DB="analytics_demo"
 GLUE_TABLE="logs_by_service"
@@ -36,13 +48,13 @@ LOCAL_OUTPUT_DIR="logs_partitioned"
 
 echo "🚀 Starting Athena + Glue export demo using Dockerized PostgreSQL..."
 
-echo "[ 1 / 8 ] Starting PostgreSQL container..."
+echo "[ 1 / 7 ] Starting PostgreSQL container..."
 docker-compose up -d
 rm -rf "$LOCAL_OUTPUT_DIR"
 aws s3 rm "$S3_OUTPUT" --recursive --quiet --region "$REGION"
 
-echo "[ 2 / 8 ] Exporting logs to S3 in partitioned format..."
-sqlxport run \
+echo "[ 2 / 7 ] Exporting logs to S3 in partitioned format..."
+sqlxport export \
   --db-url "$DB_URL" \
   --query "SELECT * FROM logs" \
   --output-dir "$LOCAL_OUTPUT_DIR" \
@@ -51,110 +63,47 @@ sqlxport run \
   --s3-bucket "$BUCKET" \
   --s3-key "$S3_KEY_PREFIX" \
   --s3-provider aws \
-  --s3-endpoint "https://s3.amazonaws.com" \
-  --upload-output-dir
+  --export-mode postgres-query \
+  --s3-endpoint "$S3_ENDPOINT" \
+  --upload-output-dir \
+  --aws-region "$REGION"
 
-echo "[ 3 / 8 ] Generating Glue-compatible DDL..."
-sqlxport run \
-  --generate-athena-ddl "$LOCAL_OUTPUT_DIR" \
-  --output-dir "$LOCAL_OUTPUT_DIR" \
-  --athena-s3-prefix "$S3_OUTPUT" \
-  --athena-table-name "$GLUE_TABLE" \
-  --partition-by service > glue_table.sql
+echo "✅ Export complete. Output: $LOCAL_OUTPUT_DIR"
+
+echo "[ 3 / 7 ] Generating Glue-compatible DDL..."
+DDL_INPUT=$(find "$LOCAL_OUTPUT_DIR" -name "*.parquet" | head -n 1)
+
+sqlxport generate-ddl \
+  --input-file "$DDL_INPUT" \
+  --table-name "$GLUE_TABLE" \
+  --partition-by service \
+  --s3-url "$S3_OUTPUT" \
+  > glue_table.sql
+
 
 cat glue_table.sql
 
-echo "[ 4 / 8 ] Verifying S3 partition folders exist..."
+echo "[ 4 / 7 ] Verifying S3 partition folders exist..."
 if ! aws s3 ls "$S3_OUTPUT" --region "$REGION" | grep "service=" > /dev/null; then
   echo "❌ ERROR: No partition folders (service=...) found in S3. Aborting."
   exit 1
 fi
 
-echo "[ 5 / 8 ] Waiting 5 seconds to ensure S3 listings are consistent..."
+echo "[ 5 / 7 ] Waiting 5 seconds to ensure S3 listings are consistent..."
 sleep 5
 
-echo "[ 6 / 8 ] Registering table in Athena Glue Catalog..."
-REGISTER_OUTPUT=$(aws athena start-query-execution \
-  --region "$REGION" \
-  --query-string file://glue_table.sql \
-  --query-execution-context Database="$GLUE_DB" \
-  --result-configuration OutputLocation="$ATHENA_OUTPUT")
+echo "[ 6 / 7 ] Ensuring Glue database '$GLUE_DB' exists..."
+aws glue get-database --name "$GLUE_DB" --region "$REGION" >/dev/null 2>&1 || \
+aws glue create-database --region "$REGION" --database-input "{\"Name\": \"$GLUE_DB\"}"
+echo "[ 7 / 7 ] Registering and repairing Glue table..."
+sqlxport postprocess \
+  --glue-register \
+  --repair-partitions \
+  --validate-table \
+  --athena-database "$GLUE_DB" \
+  --athena-table-name "$GLUE_TABLE" \
+  --athena-output "$ATHENA_OUTPUT" \
+  --region "$REGION"
 
-REGISTER_ID=$(echo "$REGISTER_OUTPUT" | jq -r .QueryExecutionId)
-echo "✅ Glue table '$GLUE_TABLE' registered."
-
-echo "[ 7 / 8 ] Repairing partitions in Glue table..."
-REPAIR_OUTPUT=$(aws athena start-query-execution \
-  --region "$REGION" \
-  --query-string "MSCK REPAIR TABLE $GLUE_TABLE;" \
-  --query-execution-context Database="$GLUE_DB" \
-  --result-configuration OutputLocation="$ATHENA_OUTPUT")
-
-REPAIR_ID=$(echo "$REPAIR_OUTPUT" | jq -r .QueryExecutionId)
-echo "   → MSCK REPAIR QueryExecutionId: $REPAIR_ID"
-
-# Wait for MSCK to complete
-for i in {1..20}; do
-  STATE=$(aws athena get-query-execution \
-    --region "$REGION" \
-    --query-execution-id "$REPAIR_ID" \
-    --query 'QueryExecution.Status.State' \
-    --output text)
-
-  echo "   → Repair state: $STATE"
-  if [[ "$STATE" == "SUCCEEDED" ]]; then
-    echo "✅ Partition repair completed."
-    break
-  elif [[ "$STATE" == "FAILED" || "$STATE" == "CANCELLED" ]]; then
-    echo "❌ MSCK REPAIR failed."
-    aws athena get-query-execution \
-      --region "$REGION" \
-      --query-execution-id "$REPAIR_ID" \
-      --query 'QueryExecution.Status.StateChangeReason' \
-      --output text
-    exit 1
-  fi
-  sleep 2
-done
-
-echo "[ 8 / 8 ] Validating Glue table with Athena query..."
-QUERY="SELECT service, COUNT(*) AS count FROM $GLUE_TABLE GROUP BY service;"
-
-EXECUTION_ID=$(aws athena start-query-execution \
-  --region "$REGION" \
-  --query-string "$QUERY" \
-  --query-execution-context Database="$GLUE_DB" \
-  --result-configuration OutputLocation="$ATHENA_OUTPUT" \
-  --query 'QueryExecutionId' \
-  --output text)
-
-echo "🔎 Athena query execution ID: $EXECUTION_ID"
-echo "⏳ Waiting for query result..."
-
-for i in {1..20}; do
-  STATE=$(aws athena get-query-execution \
-    --region "$REGION" \
-    --query-execution-id "$EXECUTION_ID" \
-    --query 'QueryExecution.Status.State' \
-    --output text)
-
-  echo "   → Current state: $STATE"
-  if [[ "$STATE" == "SUCCEEDED" ]]; then
-    echo "✅ Athena query ran successfully."
-    echo "\nRun 'jupyter notebook preview.ipynb' for a preview"
-    exit 0
-  elif [[ "$STATE" == "FAILED" || "$STATE" == "CANCELLED" ]]; then
-    echo "❌ Athena query failed with state: $STATE"
-    echo "   🔍 Fetching failure reason..."
-    aws athena get-query-execution \
-      --region "$REGION" \
-      --query-execution-id "$EXECUTION_ID" \
-      --query 'QueryExecution.Status.StateChangeReason' \
-      --output text
-    exit 1
-  fi
-  sleep 2
-done
-
-echo "❌ Timed out waiting for Athena query."
-exit 1
+echo "✅ Done! You can now query the table in Athena or preview results via:"
+echo "   jupyter notebook preview.ipynb"
