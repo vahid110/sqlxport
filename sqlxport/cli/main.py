@@ -3,7 +3,7 @@ import click
 from importlib.metadata import version, PackageNotFoundError
 
 from sqlxport.cli.cmd_export import export
-from sqlxport.cli.cmd_preview import preview
+from sqlxport.cli.cmd_preview import preview, preview_schema
 from sqlxport.cli.cmd_postprocess import postprocess
 from sqlxport.cli.cmd_generate_env import generate_env
 from sqlxport.cli.cmd_generate_ddl import generate_ddl
@@ -28,6 +28,7 @@ cli.add_command(generate_env)
 cli.add_command(generate_ddl)
 cli.add_command(validate_table)
 cli.add_command(generate_ddl)
+cli.add_command(preview_schema)
 
 if __name__ == "__main__":
     cli()

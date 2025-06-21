@@ -1,3 +1,4 @@
+# sqlxport/query_engines/base.py
 class QueryEngine:
     def preview(self, file_path: str, limit: int = 10) -> str:
         raise NotImplementedError

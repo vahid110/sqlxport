@@ -1,6 +1,9 @@
-# sqlxport/cli/cmd_preview.py
-
 import click
+import json
+import yaml
+import pandas as pd
+from sqlalchemy import create_engine, text
+
 from sqlxport.query_engines import get_query_engine
 from sqlxport.core.storage import preview_s3_parquet, list_s3_objects
 
@@ -15,11 +18,18 @@ from sqlxport.core.storage import preview_s3_parquet, list_s3_objects
 @click.option('--access-key', help='S3 access key')
 @click.option('--secret-key', help='S3 secret key')
 @click.option('--endpoint-url', help='S3 endpoint URL (useful for MinIO)')
-def preview(local_file, s3_file, list_s3, file_query_engine, bucket, key, access_key, secret_key, endpoint_url):
+@click.option('--engine-args', multiple=True, help='Extra args for query engine: key=value')
+def preview(local_file, s3_file, list_s3, file_query_engine, bucket, key, access_key, secret_key, endpoint_url, engine_args):
     """Preview exported files or list S3 objects."""
+    engine_kwargs = {}
+    for item in engine_args:
+        if '=' in item:
+            k, v = item.split('=', 1)
+            engine_kwargs[k.strip()] = v.strip()
+
     if local_file:
         engine = get_query_engine(file_query_engine)
-        print(engine.preview(local_file))
+        print(engine.preview(local_file, **engine_kwargs))
         return
 
     if s3_file:
@@ -47,3 +57,34 @@ def preview(local_file, s3_file, list_s3, file_query_engine, bucket, key, access
         return
 
     raise click.UsageError("You must specify one of --local-file, --s3-file, or --list-s3")
+
+
+@click.command("schema")
+@click.option("--db-url", required=True, help="Database URL")
+@click.option("--query", required=True, help="Query to preview")
+@click.option("--as-json", is_flag=True, help="Output schema as JSON")
+@click.option("--as-yaml", is_flag=True, help="Output schema as YAML")
+def preview_schema(db_url, query, as_json, as_yaml):
+    """Preview inferred schema from a query (column names & types)."""
+    from sqlalchemy import create_engine, text
+    import pandas as pd
+
+    try:
+        engine = create_engine(db_url)
+        with engine.connect() as conn:
+            df = pd.read_sql_query(text(f"SELECT * FROM ({query}) AS preview_subq LIMIT 0"), conn)
+    except Exception as e:
+        print(f"❌ Error during schema preview: {e}")
+        raise click.ClickException(str(e))
+
+    schema = [{"name": col, "type": str(dtype)} for col, dtype in zip(df.columns, df.dtypes)]
+
+    if as_json:
+        print(json.dumps(schema, indent=2))
+    elif as_yaml:
+        print(yaml.dump(schema, sort_keys=False))
+    else:
+        print("📄 Schema Preview:")
+        for col in schema:
+            print(f"  - {col['name']}: {col['type']}")
+
