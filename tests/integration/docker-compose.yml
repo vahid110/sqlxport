@@ -9,3 +9,13 @@ services:
       POSTGRES_DB: testdb
     volumes:
       - ./init:/docker-entrypoint-initdb.d
+
+  sqlxport_test_mysql:
+    image: mysql:8
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: testdb
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpass

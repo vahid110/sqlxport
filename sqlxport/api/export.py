@@ -13,8 +13,6 @@ from sqlxport.redshift_unload import run_unload
 from sqlxport.core.s3_config import S3Config
 
 
-
-
 class ExportMode(str, Enum):
     SQLITE_QUERY = "sqlite-query"
     POSTGRES_QUERY = "postgres-query"
@@ -25,7 +23,7 @@ class ExportMode(str, Enum):
 class ExportJobConfig:
     db_url: str
     query: str
-    export_mode: ExportMode
+    export_mode: Optional[ExportMode]
 
     output_file: Optional[str] = None
     output_dir: Optional[str] = None
@@ -46,15 +44,21 @@ def _validate_partition_column(df, partition_cols):
     if df[partition_cols].isnull().any().any():
         raise ValueError("Partition column(s) contain null values")
 
+
 def infer_export_mode(db_url: str) -> str:
     """Infer export mode from DB URL if not explicitly provided."""
     if db_url.startswith("postgresql://"):
         return "postgres-query"
     elif db_url.startswith("redshift://"):
         return "redshift-unload"
+    elif db_url.startswith("mysql://") or db_url.startswith("mysql+pymysql://"):
+        return "mysql-query"
+    elif db_url.startswith("sqlite://"):
+        return "sqlite-query"
     raise click.UsageError(
         "❌ Could not infer --export-mode from DB URL. Please specify it explicitly with --export-mode."
     )
+
 
 def run_export(config: ExportJobConfig, fetch_override=None):
     # ✅ Infer export mode if missing

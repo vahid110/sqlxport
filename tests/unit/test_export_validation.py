@@ -1,9 +1,10 @@
 import pytest
 from sqlxport.api.export import ExportJobConfig, ExportMode, run_export
 import click
+import pandas as pd
 
 def mock_fetch(_db_url, _query):
-    return []
+    return pd.DataFrame([{"a": 1}])
 
 def test_missing_query_raises():
     config = ExportJobConfig(
@@ -16,7 +17,7 @@ def test_missing_query_raises():
     with pytest.raises(click.UsageError, match="Missing --query"):
         run_export(config, fetch_override=mock_fetch)
 
-def test_missing_export_mode_raises():
+def test_missing_export_mode_infers_correctly():
     config = ExportJobConfig(
         db_url="sqlite://",
         query="SELECT 1",
@@ -24,8 +25,11 @@ def test_missing_export_mode_raises():
         format="parquet",
         export_mode=None
     )
-    with pytest.raises(click.UsageError, match="infer --export-mode"):
-        run_export(config, fetch_override=mock_fetch)
+    run_export(config, fetch_override=mock_fetch)
+
+    # ✅ Assert it was inferred correctly
+    assert config.export_mode == ExportMode("sqlite-query")
+
 
 def test_missing_output_location_raises():
     config = ExportJobConfig(
