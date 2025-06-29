@@ -74,6 +74,11 @@ $SQLXPORT_BIN export \
 echo "🔍 Step 4: Previewing basic Parquet file..."
 $SQLXPORT_BIN preview --local-file "$OUTPUT_FILE"
 
+echo
+echo "🧠 Running AI summary for basic Parquet file..."
+$SQLXPORT_BIN preview --local-file "$OUTPUT_FILE" --ai-summary
+
+
 # ──────────────────────────────────────────────────────────────
 # Step 4: CSV Export
 # ──────────────────────────────────────────────────────────────

@@ -19,7 +19,8 @@ from sqlxport.core.storage import preview_s3_parquet, list_s3_objects
 @click.option('--secret-key', help='S3 secret key')
 @click.option('--endpoint-url', help='S3 endpoint URL (useful for MinIO)')
 @click.option('--engine-args', multiple=True, help='Extra args for query engine: key=value')
-def preview(local_file, s3_file, list_s3, file_query_engine, bucket, key, access_key, secret_key, endpoint_url, engine_args):
+@click.option("--ai-summary", is_flag=True, help="Generate a natural-language summary of the file.")
+def preview(local_file, s3_file, list_s3, file_query_engine, bucket, key, access_key, secret_key, endpoint_url, engine_args, ai_summary):
     """Preview exported files or list S3 objects."""
     engine_kwargs = {}
     for item in engine_args:
@@ -28,8 +29,13 @@ def preview(local_file, s3_file, list_s3, file_query_engine, bucket, key, access
             engine_kwargs[k.strip()] = v.strip()
 
     if local_file:
-        engine = get_query_engine(file_query_engine)
-        print(engine.preview(local_file, **engine_kwargs))
+        if ai_summary:
+            from sqlxport.utils.summary import summarize_file
+            print("\n📄 AI Summary:\n")
+            print(summarize_file(local_file))
+        else:
+            engine = get_query_engine(file_query_engine)
+            print(engine.preview(local_file, **engine_kwargs))
         return
 
     if s3_file:

@@ -4,6 +4,7 @@ from sqlxport.cli.main import cli
 import tempfile
 import pyarrow as pa
 import pyarrow.parquet as pq
+from sqlxport.cli.main import cli
 
 def test_conflicting_output_flags(cli_runner):
     result = cli_runner.invoke(cli, [
@@ -60,6 +61,18 @@ def test_generate_ddl_missing_params(cli_runner):
     ])
     assert result.exit_code == 2
     assert "Missing option '--table-name'" in result.output  # <- use real error string
+
+def test_ai_summary_flag(cli_runner, sample_parquet_file):
+    result = cli_runner.invoke(
+        cli,
+        ["preview", "--local-file", sample_parquet_file, "--ai-summary"]
+    )
+    print("\n--- CLI OUTPUT ---")
+    print(result.output)
+    print("------------------")
+
+    assert result.exit_code == 0
+
 
 
 
