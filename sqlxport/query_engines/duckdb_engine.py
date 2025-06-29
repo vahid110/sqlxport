@@ -4,14 +4,23 @@ import duckdb
 from .base import QueryEngine
 
 
+import os
+import duckdb
+
 def load_schema_duckdb(file_path: str):
     """
-    Infers the schema of a Parquet or CSV file using DuckDB.
+    Infers the schema of a Parquet or CSV file or directory using DuckDB.
     Returns a list of dicts with 'name' and 'type' keys.
     """
     con = duckdb.connect()
     try:
-        df = con.sql(f"DESCRIBE SELECT * FROM '{file_path}'").df()
+        if os.path.isdir(file_path):
+            glob_pattern = os.path.join(file_path, "*.parquet")
+            query = f"DESCRIBE SELECT * FROM read_parquet('{glob_pattern}')"
+        else:
+            query = f"DESCRIBE SELECT * FROM '{file_path}'"
+        
+        df = con.sql(query).df()
         return [
             {"name": row["column_name"], "type": row["column_type"]}
             for _, row in df.iterrows()

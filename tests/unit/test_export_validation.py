@@ -49,7 +49,7 @@ def test_redshift_unload_requires_iam_role():
         format="parquet",
         s3_output_prefix="s3://bucket/key"
     )
-    with pytest.raises(click.UsageError, match="requires --redshift-unload-role"):
+    with pytest.raises(click.UsageError, match="requires --iam-role"):
         run_export(config, fetch_override=mock_fetch)
 
 def test_redshift_unload_requires_output_prefix():

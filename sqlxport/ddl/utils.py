@@ -62,7 +62,6 @@ def generate_athena_ddl(local_parquet_path, s3_prefix, table_name, partition_col
     ddl += "STORED AS PARQUET\n"
     ddl += f"LOCATION '{s3_prefix}';\n"
 
-    print("📄 Generated Athena DDL:\n", ddl)
     return ddl
 
 

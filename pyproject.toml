@@ -43,3 +43,7 @@ where = ["."]
 filterwarnings = [
     "ignore::DeprecationWarning:botocore.*"
 ]
+markers = [
+    "integration: marks tests as integration (deselect with '-m \"not integration\"')",
+    "unit: marks tests as unit tests (deselect with '-m \"not unit\"')"
+]

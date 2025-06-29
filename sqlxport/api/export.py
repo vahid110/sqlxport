@@ -78,7 +78,7 @@ def run_export(config: ExportJobConfig, fetch_override=None):
     # ✅ Redshift UNLOAD
     if export_mode == "redshift-unload":
         if not config.redshift_unload_role:
-            raise click.UsageError("Redshift UNLOAD requires --redshift-unload-role.")
+            raise click.UsageError("Redshift UNLOAD requires --iam-role.")
         if not config.s3_output_prefix:
             raise click.UsageError("Redshift UNLOAD requires --s3-output-prefix.")
 

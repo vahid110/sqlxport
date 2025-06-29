@@ -39,7 +39,7 @@ def test_redshift_unload_requires_iam_role():
         "--s3-output-prefix", "s3://dummy/prefix/"
     ])
     assert result.exit_code == 2
-    assert "requires --redshift-unload-role" in result.output
+    assert "requires --iam-role" in result.output
 
 def test_preview_local_file_invalid_path():
     runner = CliRunner()
