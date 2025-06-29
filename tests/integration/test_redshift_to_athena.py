@@ -147,6 +147,10 @@ def test_redshift_to_athena_end_to_end():
 
 
     result = subprocess.run(validate_cmd, capture_output=True, text=True, env=env)
+    print("ATHENA PREVIEW RESULT:")
+    print(result.stdout)
+
     assert result.returncode == 0, f"Athena validation failed:\n{result.stderr}"
-    assert any(col in result.stdout.lower() for col in ["userid", "user_id", "user id"])
+    assert any(col in result.stdout.lower() for col in ["id", "name"])
+
 

@@ -1,3 +1,4 @@
+# tests/integration/test_preview_file_engines.py
 import pytest
 from click.testing import CliRunner
 from dotenv import dotenv_values
@@ -41,10 +42,34 @@ def test_preview_duckdb_local(sample_files, format_):
     ("parquet", config["ATHENA_S3_PREFIX"]),
     ("csv", config["ATHENA_S3_PREFIX"].rstrip("/") + "_csv/")
 ])
-def test_preview_athena_dynamic(format_, s3_prefix):
+def test_preview_athena_dynamic(sample_files, format_, s3_prefix):
     table_name = f"preview_{uuid.uuid4().hex[:8]}"
     s3_path = s3_prefix
     athena = boto3.client("athena", region_name=config["AWS_REGION"])
+    s3 = boto3.client("s3", region_name=config["AWS_REGION"])
+    bucket = config["S3_BUCKET"]
+    local_file = sample_files[format_]
+    s3_key = s3_path.replace(f"s3://{bucket}/", "") + Path(local_file).name
+
+    # Upload test file to S3
+    s3.upload_file(local_file, bucket, s3_key)
+
+    # Compute parent path for LOCATION
+    s3_path = f"s3://{bucket}/{s3_key.rsplit('/', 1)[0]}/"
+
+    # Wait for S3 consistency
+    for _ in range(10):
+        try:
+            s3.head_object(Bucket=bucket, Key=s3_key)
+            break
+        except s3.exceptions.ClientError:
+            time.sleep(1)
+
+    response = s3.list_objects_v2(Bucket=bucket, Prefix=s3_key.rsplit("/", 1)[0])
+    print("S3 keys found:", [obj["Key"] for obj in response.get("Contents", [])])
+    print("Uploaded:", s3_key)
+    print("Using s3_path:", s3_path)
+    print("Format:", format_)
 
     if format_ == "parquet":
         ddl = f"""
@@ -67,7 +92,7 @@ def test_preview_athena_dynamic(format_, s3_prefix):
         TBLPROPERTIES ("skip.header.line.count"="1")
         """
 
-    # Create table
+    # Create table in Athena
     athena.start_query_execution(
         QueryString=ddl,
         QueryExecutionContext={"Database": config["ATHENA_DATABASE"]},
@@ -75,20 +100,27 @@ def test_preview_athena_dynamic(format_, s3_prefix):
     )
     time.sleep(2)
 
-    # Run preview
+    # Run preview using the same S3 path
     result = runner.invoke(preview, [
-        "--local-file", s3_path,
+        "--local-file", local_file,
         "--file-query-engine", "athena",
         "--engine-args", f"database={config['ATHENA_DATABASE']}",
         "--engine-args", f"output_location={config['ATHENA_OUTPUT_LOCATION']}",
-        "--engine-args", f"region={config['AWS_REGION']}"
+        "--engine-args", f"region={config['AWS_REGION']}",
+        "--engine-args", f"s3_path={s3_path}",
+        "--engine-args", f"file_format={format_}"
     ])
+
+
+
+
     assert result.exit_code == 0, result.output
     assert "Alice" in result.output or "| id" in result.output
 
-    # Cleanup
+    # Cleanup: drop table and delete uploaded file
     athena.start_query_execution(
         QueryString=f"DROP TABLE IF EXISTS {config['ATHENA_DATABASE']}.{table_name}",
         QueryExecutionContext={"Database": config["ATHENA_DATABASE"]},
         ResultConfiguration={"OutputLocation": config["ATHENA_OUTPUT_LOCATION"]}
     )
+    s3.delete_object(Bucket=bucket, Key=s3_key)

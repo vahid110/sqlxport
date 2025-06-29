@@ -12,7 +12,14 @@ def find_first_parquet(path):
                 return os.path.join(root, f)
     raise FileNotFoundError(f"No .parquet files found under: {path}")
 
-def generate_athena_ddl(local_parquet_path, s3_prefix, table_name, partition_cols=None, schema_df=None):
+def find_first_csv(folder: str) -> str | None:
+    for root, _, files in os.walk(folder):
+        for name in files:
+            if name.endswith(".csv"):
+                return os.path.join(root, name)
+    return None
+
+def generate_athena_ddl(local_parquet_path, s3_prefix, table_name, partition_cols=None, schema_df=None, file_format="parquet"):
     import pyarrow.parquet as pq
 
     if schema_df is None:
@@ -59,8 +66,15 @@ def generate_athena_ddl(local_parquet_path, s3_prefix, table_name, partition_col
             ddl += f"  {name} {athena_type},\n"
         ddl = ddl.rstrip(",\n") + "\n)\n"
 
-    ddl += "STORED AS PARQUET\n"
-    ddl += f"LOCATION '{s3_prefix}';\n"
+    if file_format == "csv":
+        ddl += (
+            "ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'\n"
+            "STORED AS TEXTFILE\n"
+            f"LOCATION '{s3_prefix}'\n"
+            'TBLPROPERTIES ("skip.header.line.count"="1");\n'
+        )
+    else:
+        ddl += f"STORED AS PARQUET\nLOCATION '{s3_prefix}';\n"
 
     return ddl
 
@@ -116,3 +130,9 @@ def arrow_to_athena_type(arrow_type):
         return f"MAP<STRING, STRING>"
 
     return "STRING"
+
+def generate_athena_ddl_parquet(*args, **kwargs):
+    return generate_athena_ddl(*args, file_format="parquet", **kwargs)
+
+def generate_athena_ddl_csv(*args, **kwargs):
+    return generate_athena_ddl(*args, file_format="csv", **kwargs)

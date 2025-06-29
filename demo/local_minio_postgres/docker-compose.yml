@@ -11,7 +11,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./seed.sql:/docker-entrypoint-initdb.d/seed.sql
+      - ./init:/docker-entrypoint-initdb.d
 
   minio:
     image: minio/minio

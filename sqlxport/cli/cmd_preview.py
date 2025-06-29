@@ -1,7 +1,11 @@
+# sqlxport/cli/cmd_preview.py
+
 import click
 import json
 import yaml
 import pandas as pd
+import glob
+import os
 from sqlalchemy import create_engine, text
 
 from sqlxport.query_engines import get_query_engine
@@ -10,6 +14,7 @@ from sqlxport.core.storage import preview_s3_parquet, list_s3_objects
 
 @click.command("preview")
 @click.option('--local-file', help='Path to local Parquet or CSV file to preview')
+@click.option('--local-dir', help='Path to local directory containing export files (e.g., Parquet partitioned output)')
 @click.option('--s3-file', is_flag=True, help='Preview Parquet file from S3')
 @click.option('--list-s3', is_flag=True, help='List objects in S3 prefix')
 @click.option('--file-query-engine', default="duckdb", help='Query engine to use for preview (duckdb, athena, etc.)')
@@ -20,7 +25,7 @@ from sqlxport.core.storage import preview_s3_parquet, list_s3_objects
 @click.option('--endpoint-url', help='S3 endpoint URL (useful for MinIO)')
 @click.option('--engine-args', multiple=True, help='Extra args for query engine: key=value')
 @click.option("--ai-summary", is_flag=True, help="Generate a natural-language summary of the file.")
-def preview(local_file, s3_file, list_s3, file_query_engine, bucket, key, access_key, secret_key, endpoint_url, engine_args, ai_summary):
+def preview(local_file, local_dir, s3_file, list_s3, file_query_engine, bucket, key, access_key, secret_key, endpoint_url, engine_args, ai_summary):
     """Preview exported files or list S3 objects."""
     engine_kwargs = {}
     for item in engine_args:
@@ -28,14 +33,28 @@ def preview(local_file, s3_file, list_s3, file_query_engine, bucket, key, access
             k, v = item.split('=', 1)
             engine_kwargs[k.strip()] = v.strip()
 
+    engine = get_query_engine(file_query_engine)
+
     if local_file:
         if ai_summary:
             from sqlxport.utils.summary import summarize_file
             print("\n📄 AI Summary:\n")
             print(summarize_file(local_file))
         else:
-            engine = get_query_engine(file_query_engine)
             print(engine.preview(local_file, **engine_kwargs))
+        return
+
+    if local_dir:
+        all_files = glob.glob(os.path.join(local_dir, "**/*.parquet"), recursive=True)
+        if not all_files:
+            raise click.ClickException(f"No Parquet files found in {local_dir}")
+        if ai_summary:
+            from sqlxport.utils.summary import summarize_file
+            for f in all_files:
+                print(f"\n📄 AI Summary for {f}:")
+                print(summarize_file(f))
+        else:
+            print(engine.preview(all_files, **engine_kwargs))
         return
 
     if s3_file:
@@ -62,7 +81,7 @@ def preview(local_file, s3_file, list_s3, file_query_engine, bucket, key, access
         )
         return
 
-    raise click.UsageError("You must specify one of --local-file, --s3-file, or --list-s3")
+    raise click.UsageError("You must specify one of --local-file, --local-dir, --s3-file, or --list-s3")
 
 
 @click.command("schema")
@@ -72,9 +91,6 @@ def preview(local_file, s3_file, list_s3, file_query_engine, bucket, key, access
 @click.option("--as-yaml", is_flag=True, help="Output schema as YAML")
 def preview_schema(db_url, query, as_json, as_yaml):
     """Preview inferred schema from a query (column names & types)."""
-    from sqlalchemy import create_engine, text
-    import pandas as pd
-
     try:
         engine = create_engine(db_url)
         with engine.connect() as conn:
@@ -93,4 +109,3 @@ def preview_schema(db_url, query, as_json, as_yaml):
         print("📄 Schema Preview:")
         for col in schema:
             print(f"  - {col['name']}: {col['type']}")
-

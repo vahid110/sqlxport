@@ -1,6 +1,7 @@
 # sqlxport/cli/cmd_generate_ddl.py
 
 import click
+import os
 from sqlxport.query_engines import get_query_engine
 from sqlxport.ddl.utils import generate_athena_ddl
 
@@ -34,12 +35,16 @@ def generate_ddl(input_file, output_format, file_query_engine, partition_by, tab
 
     partition_cols = [col.strip() for col in partition_by.split(",")] if partition_by else None
 
+    # 🧠 Detect file format
+    _, ext = os.path.splitext(input_file.lower())
+    file_format = "csv" if ext == ".csv" else "parquet"
     ddl = generate_athena_ddl(
         local_parquet_path=input_file,
         s3_prefix=s3_url,
         table_name=table_name,
         partition_cols=partition_cols,
-        schema_df=schema_df
+        schema_df=schema_df,
+        file_format=file_format,
     )
 
     print(ddl)

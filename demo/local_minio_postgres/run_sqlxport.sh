@@ -20,7 +20,6 @@ S3_ACCESS_KEY="minioadmin"
 S3_SECRET_KEY="minioadmin"
 AWS_REGION="us-east-1"
 
-# Set credentials for AWS CLI (used for bucket check)
 export AWS_ACCESS_KEY_ID="$S3_ACCESS_KEY"
 export AWS_SECRET_ACCESS_KEY="$S3_SECRET_KEY"
 
@@ -78,7 +77,6 @@ echo
 echo "🧠 Running AI summary for basic Parquet file..."
 $SQLXPORT_BIN preview --local-file "$OUTPUT_FILE" --ai-summary
 
-
 # ──────────────────────────────────────────────────────────────
 # Step 4: CSV Export
 # ──────────────────────────────────────────────────────────────
@@ -124,15 +122,56 @@ echo "🔍 Previewing partitions using DuckDB:"
 duckdb -c "SELECT region, COUNT(*) FROM read_parquet('output_partitioned/*/*.parquet') GROUP BY region;"
 
 # ──────────────────────────────────────────────────────────────
-# Step 6: Cleanup
+# Step 6: Exporting Complex Join Query
 # ──────────────────────────────────────────────────────────────
 echo
-echo "🧼 Step 6: Stopping Docker services..."
+echo "🔁 Step 6: Exporting complex join query from PostgreSQL..."
+OUTPUT_DIR="output_complex_postgres"
+rm -rf "$OUTPUT_DIR"
+$SQLXPORT_BIN export \
+  --db-url "$DB_URL" \
+  --query "
+    WITH customer_totals AS (
+      SELECT
+        c.name,
+        c.country,
+        COUNT(o.id) AS order_count,
+        SUM(o.total_amount) AS total_spent
+      FROM customers c
+      JOIN orders o ON c.id = o.customer_id
+      WHERE c.country = 'Germany'
+      GROUP BY c.name, c.country
+    )
+    SELECT * FROM customer_totals
+    ORDER BY total_spent DESC
+  " \
+  --output-dir "$OUTPUT_DIR" \
+  --format parquet \
+  --export-mode postgres-query \
+
+echo
+echo "🔍 Previewing output_complex_postgres with DuckDB:"
+duckdb -c "
+  SELECT country, COUNT(*) AS customer_groups, SUM(total_spent) AS total_spent
+  FROM read_parquet('output_complex_postgres/*.parquet')
+  GROUP BY country;
+"
+
+echo
+echo "🧪 sqlxport preview of output_complex_postgres:"
+$SQLXPORT_BIN preview --local-dir output_complex_postgres
+
+# ──────────────────────────────────────────────────────────────
+# Step 7: Cleanup
+# ──────────────────────────────────────────────────────────────
+echo
+echo "🧼 Step 7: Stopping Docker services..."
 docker-compose down
 
 echo "🧹 Cleaning up local output files..."
 rm -f sales.parquet sales.csv
 rm -rf output_partitioned
+rm -rf output_complex_postgres
 
 echo
 echo "✅ All exports and previews completed successfully."

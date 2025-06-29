@@ -1,3 +1,5 @@
+#tests/integration/test_csv_preview.py
+
 import os
 import subprocess
 import pytest
@@ -33,8 +35,11 @@ def test_csv_export_and_preview(csv_output_dir):
 
     result = subprocess.run([
         "sqlxport", "preview",
-        "--local-file", str(csv_output_dir / "output.csv")
+        "--local-file", str(csv_output_dir / "output.csv"),
+        "--file-query-engine", "duckdb",
+        "--engine-args", "header=True"
     ], capture_output=True, text=True)
+
 
 
     print("PREVIEW STDOUT:", result.stdout)
